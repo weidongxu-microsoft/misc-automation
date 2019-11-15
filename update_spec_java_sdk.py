@@ -1,6 +1,7 @@
-from update_config import *
+from java_sdk_config import *
 import os
 import logging
+import re
 import shutil
 import subprocess
 import os.path as path
@@ -12,9 +13,52 @@ JAVA_OUTPUT_REPLACE = 'output-folder: $(azure-libraries-for-java-folder)/sdk/'
 
 def main():
     logging.basicConfig(level=logging.WARNING)
-    #fix_exclude()
     process_swagger()
+    #process_swagger_all()
     process_sdk()
+
+
+def process_swagger_all():
+    if CLEAN_REPO:
+        logging.info('git ckeckout clean')
+        subprocess.Popen(['git', 'checkout', '.'], cwd=SDK_REPO).communicate()
+        subprocess.Popen(['git', 'clean', '-fd'], cwd=SDK_REPO).communicate()
+
+    sdk_dirs_processed = []
+
+    for root, dirs, files in os.walk(path.join(SPEC_REPO, 'specification')):
+        (head, tail) = path.split(root)
+        if tail == 'resource-manager':
+            (head1, sdk_dir) = path.split(head)
+            for filename in files:
+                if filename == 'readme.java.md' or filename == 'readme.md':
+                    processed = process_readme_all(path.join(root, filename))
+                    if processed:
+                        sdk_dirs_processed.append(sdk_dir)
+
+    logging.info('processed sdk dirs {}'.format(str(sdk_dirs_processed)))
+
+
+def process_readme_all(filename):
+    logging.info('process {}'.format(filename))
+
+    modified = False
+    modified_lines = []
+    lines = read_lines(filename)
+    for line in lines:
+        if line.find(JAVA_OUTPUT_MATCH) != -1 and line.find('/resource-manager/v20') != -1:
+            match = re.search(r'.*' + re.escape(JAVA_OUTPUT_MATCH) + r'(\w+)' + r'/resource-manager/v20.*', line)
+            if match:
+                modified = True
+                sdk_name = match.group(1)
+                modified_line = line.replace(JAVA_OUTPUT_MATCH + sdk_name + '/resource-manager', JAVA_OUTPUT_REPLACE + sdk_name + '/azure-mgmt-' + sdk_name)
+                if modified_line != line:
+                    line = modified_line
+        modified_lines.append(line)
+    if modified:
+        logging.info('modify readme {}'.format(filename))
+        write_lines(filename, modified_lines)
+    return modified
 
 
 def process_swagger():
