@@ -12,18 +12,9 @@ JAVA_OUTPUT_REPLACE = 'output-folder: $(azure-libraries-for-java-folder)/sdk/'
 
 def main():
     logging.basicConfig(level=logging.WARNING)
-    #update_sdks()
-    #process_swagger()
+    #fix_exclude()
+    process_swagger()
     process_sdk()
-
-
-def update_sdks():
-    for line in LIBRARIES.splitlines():
-        if line:
-            sdk_name = line.split('/')[0]
-            if sdk_name not in SDK_TO_UPDATE:
-                SDK_TO_UPDATE.append(sdk_name)
-    logging.info('sdks {}'.format(str(SDK_TO_UPDATE)))
 
 
 def process_swagger():
@@ -181,7 +172,7 @@ def process_sdk_dir(sdk_dir, sdk_name):
                     elif paths_tag and exclude_tag and line.find('-') == -1:
                         paths_tag = False
                         exclude_tag = False
-                        modified_lines.append('      - sdk/keyvault/azure-mgmt-\n')
+                        modified_lines.append('      - sdk/{service}/azure-mgmt-\n'.format(service=sdk_name))
                     modified_lines.append(line)
                 write_lines(ci_filename, modified_lines)
             else:
@@ -198,7 +189,7 @@ def process_sdk_dir(sdk_dir, sdk_name):
                         paths_tag = False
                         include_tag = False
                         modified_lines.append('    exclude:\n')
-                        modified_lines.append('      - sdk/keyvault/azure-mgmt-\n')
+                        modified_lines.append('      - sdk/{service}/azure-mgmt-\n'.format(service=sdk_name))
                     modified_lines.append(line)
                 write_lines(ci_filename, modified_lines)
 
@@ -232,6 +223,19 @@ def process_sdk_dir(sdk_dir, sdk_name):
     write_string(pom_filename, pom_output)
 
     return True
+
+
+def fix_exclude():
+    for sdk_dir in os.listdir(path.join(SDK_REPO, 'sdk')):
+        if ('azure-mgmt-' + sdk_dir) in os.listdir(path.join(SDK_REPO, 'sdk', sdk_dir)):
+            candidate_ci_files = ['ci.yml', 'ci.data.yml']
+            for ci_filename in candidate_ci_files:
+                ci_filename = path.join(SDK_REPO, 'sdk', sdk_dir, ci_filename)
+                if path.isfile(ci_filename):
+                    logging.info('modify yaml {}'.format(ci_filename))
+                    lines = read_lines(ci_filename)
+                    lines = [line.replace('sdk/keyvault/azure-mgmt-', 'sdk/' + sdk_dir + '/azure-mgmt-') for line in lines]
+                    write_lines(ci_filename, lines)
 
 
 def read_lines(filename):
