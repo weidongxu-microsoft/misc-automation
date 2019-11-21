@@ -51,7 +51,7 @@ def process_readme_all(filename):
             if match:
                 modified = True
                 sdk_name = match.group(1)
-                modified_line = line.replace(JAVA_OUTPUT_MATCH + sdk_name + '/resource-manager', JAVA_OUTPUT_REPLACE + sdk_name + '/azure-mgmt-' + sdk_name)
+                modified_line = line.replace(JAVA_OUTPUT_MATCH + sdk_name + '/resource-manager/', JAVA_OUTPUT_REPLACE + sdk_name + '/mgmt-')
                 if modified_line != line:
                     line = modified_line
         modified_lines.append(line)
