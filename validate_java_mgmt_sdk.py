@@ -25,7 +25,7 @@ def process_sdk():
 def process_sdk_dir(sdk_dir, sdk_name):
     mgmt_modules = []
     for module_dir in os.listdir(sdk_dir):
-        if module_dir.startswith("mgmt-"):
+        if module_dir.startswith("mgmt-v"):
             mgmt_modules.append(module_dir)
 
     if mgmt_modules:
