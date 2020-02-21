@@ -1,43 +1,6 @@
 CLEAN_REPO = True
 
-SPEC_REPO = '/mnt/c/github_fork/azure-rest-api-specs'
-
-SDK_REPO = '/mnt/c/github/azure-sdk-for-java'
-
-# SDK_TO_UPDATE = ['keyvault']
-
-SDK_TO_UPDATE = ['advisor', 'apimanagement', 'appconfiguration', 'applicationinsights', 'appplatform', 'appservice',
-                 'authorization', 'automation', 'azurestack', 'batchai', 'cognitiveservices', 'compute',
-                 'containerinstance', 'containerregistry', 'containerservice', 'cosmosdb', 'costmanagement',
-                 'datalakeanalytics', 'datalakestore', 'datamigration', 'devspaces', 'devtestlabs', 'dns',
-                 'edgegateway', 'eventgrid', 'eventhubs', 'features', 'hanaonazure', 'hdinsight', 'iotcentral',
-                 'iothub', 'kusto', 'labservices', 'locks', 'loganalytics', 'logic', 'machinelearningservices',
-                 'mariadb', 'marketplaceordering', 'mediaservices', 'mixedreality', 'monitor', 'mysql', 'netapp',
-                 'network', 'notificationhubs', 'operationsmanagement', 'peering', 'policyinsights', 'policy',
-                 'postgresql', 'privatedns', 'recoveryservices.backup', 'recoveryservices',
-                 'recoveryservices.siterecovery', 'redis', 'relay', 'resourcegraph', 'resourcehealth', 'resources',
-                 'search', 'servicebus', 'servicefabric', 'signalr', 'sql', 'sqlvirtualmachine', 'storagecache',
-                 'storageimportexport', 'storage', 'streamanalytics', 'vmwarecloudsimple'
-]
-
-SDK_SPEC_MAP = {
-    'appservice': 'web',
-    'cosmosdb': 'cosmos-db',
-    'costmanagement': 'cost-management',
-    'datalakeanalytics': 'datalake-analytics',
-    'datalakestore': 'datalake-store',
-    # 'edgegateway': '',
-    'eventhubs': 'eventhub',
-    'features': 'resources',
-    'kusto': 'azure-kusto',
-    'locks': 'resources',
-    'loganalytics': 'operationalinsights',
-    # 'mixedreality': 'mixedreality',
-    'policy': 'resources',
-    'resources': 'resources',
-    'recoveryservices.backup': 'recoveryservicesbackup',
-    'recoveryservices.siterecovery': 'recoveryservicessiterecovery'
-}
+SDK_REPO = 'c:/github_fork/azure-sdk-for-java'
 
 POM_TEMPLATE = r'''<!-- Copyright (c) Microsoft Corporation. All rights reserved.
      Licensed under the MIT License. -->
@@ -54,15 +17,6 @@ POM_TEMPLATE = r'''<!-- Copyright (c) Microsoft Corporation. All rights reserved
 </project>
 '''
 
-EXCLUDE_DIRS_PREFIX = [
-    'azure-data',
-    'azure-messaging',
-    'azure-storage',
-    'azure-security',
-    'microsoft-azure',
-    'ms-azure'
-]
-
 YAML_TEMPLATE = r'''resources:
   repositories:
     - repository: azure-sdk-build-tools
@@ -78,8 +32,8 @@ trigger:
       - release/*
   paths:
     include:
-      - sdk/{service}/
-{excludes}
+      - sdk/{service}/mgmt-
+
 pr:
   branches:
     include:
@@ -89,48 +43,10 @@ pr:
       - release/*
   paths:
     include:
-      - sdk/{service}/
-{excludes}
+      - sdk/{service}/mgmt-
 
-variables:
-  BuildOptions: '--batch-mode -Dgpg.skip -Dmaven.wagon.http.pool=false'
-  ServiceDirectory: {service}
-  ProfileFlag: ''
-
-jobs:
-  - job: 'Build'
-
-    variables:
-      - template: ../../eng/pipelines/templates/variables/globals.yml
-
-    strategy:
-      matrix:
-        Java 8:
-          ArtifactName: 'packages'
-          JavaVersion: '1.8'
-        Java 7:
-          ArtifactName: 'packages'
-          JavaVersion: '1.7'
-
-    pool:
-      vmImage: 'ubuntu-16.04'
-
-    steps:
-      - task: Maven@3
-        displayName: 'Build'
-        inputs:
-          mavenPomFile: sdk/$(ServiceDirectory)/pom.mgmt.xml
-          goals: 'compile'
-          options: '$(BuildOptions) $(ProfileFlag) "-DpackageOutputDirectory=$(Build.ArtifactStagingDirectory)" -DskipTests'
-          mavenOptions: '$(MemoryOptions) $(LoggingOptions)'
-          javaHomeOption: 'JDKVersion'
-          jdkVersionOption: $(JavaVersion)
-          jdkArchitectureOption: 'x64'
-          publishJUnitResults: false
-
-      - task: PublishTestResults@2
-        condition: succeededOrFailed()
-        inputs:
-          mergeTestResults: true
-          testRunTitle: 'On Java $(JavaVersion)'
+stages:
+  - template: ../../eng/pipelines/templates/stages/archetype-sdk-management.yml
+    parameters:
+      ServiceDirectory: {service}
 '''
