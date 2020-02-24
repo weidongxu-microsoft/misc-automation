@@ -17,6 +17,14 @@ POM_TEMPLATE = r'''<!-- Copyright (c) Microsoft Corporation. All rights reserved
 </project>
 '''
 
+MGMT_DIRS_PREFIX = 'mgmt-v'
+
+EXCLUDE_DIRS_PREFIX = [
+    'azure',
+    'microsoft-azure',
+    'ms-azure'
+]
+
 YAML_TEMPLATE = r'''resources:
   repositories:
     - repository: azure-sdk-build-tools
@@ -32,7 +40,11 @@ trigger:
       - release/*
   paths:
     include:
-      - sdk/{service}/mgmt-
+      - sdk/{service}/
+    exclude:
+      - sdk/{service}/azure
+      - sdk/{service}/microsoft-azure
+      - sdk/{service}/ms-azure
 
 pr:
   branches:
@@ -43,7 +55,11 @@ pr:
       - release/*
   paths:
     include:
-      - sdk/{service}/mgmt-
+      - sdk/{service}/
+    exclude:
+      - sdk/{service}/azure
+      - sdk/{service}/microsoft-azure
+      - sdk/{service}/ms-azure
 
 stages:
   - template: ../../eng/pipelines/templates/stages/archetype-sdk-management.yml

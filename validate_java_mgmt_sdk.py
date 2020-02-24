@@ -24,11 +24,23 @@ def process_sdk():
 
 def process_sdk_dir(sdk_dir, sdk_name):
     mgmt_modules = []
-    for module_dir in os.listdir(sdk_dir):
-        if module_dir.startswith("mgmt-v"):
-            mgmt_modules.append(module_dir)
+    for module_dir_name in os.listdir(sdk_dir):
+        module_dir = path.join(sdk_dir, module_dir_name)
+        if path.isdir(module_dir) and module_dir_name.startswith(MGMT_DIRS_PREFIX):
+            mgmt_modules.append(module_dir_name)
 
     if mgmt_modules:
+        for module_dir_name in os.listdir(sdk_dir):
+            module_dir = path.join(sdk_dir, module_dir_name)
+            if path.isdir(module_dir) and not module_dir_name.startswith(MGMT_DIRS_PREFIX):
+                excluded = False
+                for exclude_dir_prefix in EXCLUDE_DIRS_PREFIX:
+                    if module_dir_name.startswith(exclude_dir_prefix):
+                        excluded = True
+                        break
+                if not excluded:
+                    logging.warning('non-mgmt dir is not excluded: {}'.format(module_dir))
+
         # ci.mgmt.yaml
         yaml_filename = path.join(sdk_dir, 'ci.mgmt.yml')
         yaml_output = YAML_TEMPLATE.format(service=sdk_name)
@@ -39,8 +51,6 @@ def process_sdk_dir(sdk_dir, sdk_name):
         pom_filename = path.join(sdk_dir, 'pom.mgmt.xml')
         module_block = ''
         for module_name in mgmt_modules:
-            (head, tail) = path.split(sdk_dir)
-            (head1, tail1) = path.split(head)
             module_block += '    <module>{dir}</module>\n'.format(dir=module_name)
         pom_output = POM_TEMPLATE.format(service=sdk_name, modules=module_block)
         logging.info('generate pom {}'.format(pom_filename))
