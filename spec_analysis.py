@@ -71,13 +71,16 @@ def collect():
 
 
 def analysis():
+    pd.set_option('display.max_colwidth', -1)
+
     df = pd.read_csv('spec_endpoint_info.csv', sep=',', header=None)
     df.columns = ['service', 'plane', 'version', 'endpoint']
-    df.drop_duplicates('endpoint', keep=False, inplace=True)
+    df.sort_values('version', ascending=False, inplace=True)
+    df.drop_duplicates(['endpoint', 'service'], keep='first', inplace=True)
     df1 = df.groupby('plane').count()
     print(str(df1))
 
-    df2 = df.groupby(['plane', 'service']).count().sort_values('endpoint', ascending=False)
+    df2 = df.groupby(['plane', 'service']).count().drop('version', axis=1).sort_values('endpoint', ascending=False)
     print(str(df2.head(50)))
 
 
