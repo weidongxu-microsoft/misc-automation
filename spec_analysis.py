@@ -83,6 +83,12 @@ def analysis():
     df2 = df.groupby(['plane', 'service']).count().drop('version', axis=1).sort_values('endpoint', ascending=False)
     print(str(df2.head(50)))
 
+    df3 = df2.reset_index().head(20).sort_values('endpoint')
+    colors = tuple(np.where(df3["plane"] == 'data-plane', 'r', 'g'))
+    df3.plot(kind='barh', x='service', y='endpoint', color=colors)
+
+    plt.show()
+
 
 class Plane(Enum):
     DATA = 'data-plane'
