@@ -84,7 +84,7 @@ def data():
 
 
 def analysis():
-    pd.set_option('display.max_colwidth', -1)
+    pd.set_option('display.max_colwidth', None)
 
     df_endpoint = pd.read_csv('spec_endpoint_info.csv', sep=',', header=None)
     df_endpoint.columns = ['service', 'plane', 'version', 'endpoint']
@@ -103,13 +103,19 @@ def analysis():
     df_file = pd.read_csv('spec_file_info.csv', sep=',', header=None)
     df_file.columns = ['service', 'plane', 'rp', 'state', 'version', 'file', 'ratio']
 
-    df4 = df_file.drop(['rp', 'state', 'version', 'file'], axis=1).groupby(['service', 'plane']).mean().reset_index().sort_values('ratio', ascending=False)
+    df4 = df_file.drop(['rp', 'state', 'version', 'file'], axis=1).groupby(['service', 'plane']).mean().reset_index()
     print(str(df4.head(50)))
 
     df4 = df4.head(20).sort_values('ratio', ascending=True)
     colors = tuple(np.where(df4['plane'] == 'data-plane', '#D81B60', '#1E88E5'))
     df4.plot(kind='barh', x='service', y='ratio', color=colors)
     plt.show()
+
+    # df5 = df4.loc[df4['service'].isin(df3['service'].values)].reset_index()
+    # print(str(df5.head(50)))
+    # colors = tuple(np.where(df5['plane'] == 'data-plane', '#D81B60', '#1E88E5'))
+    # df5.plot(kind='barh', x='service', y='ratio', color=colors)
+    # plt.show()
 
 
 class Plane(Enum):
