@@ -12,7 +12,7 @@ import pandas as pd
 SPEC_REPO = 'c:/github/azure-rest-api-specs'
 
 
-def collect():
+def data():
     spec_file_infos = list()
     spec_endpoint_infos = list()
 
@@ -50,14 +50,27 @@ def collect():
                                                     spec_file_info.state = state
                                                     spec_file_info.version = version
                                                     spec_file_info.name = os.path.splitext(json_filename)[0]
-                                                    spec_file_infos.append(spec_file_info)
 
                                                     with open(json_file, 'r', encoding='utf-8') as jsonfile:
                                                         try:
                                                             spec_json = json.loads(jsonfile.read())
                                                             spec_endpoint_infos.extend(get_spec_endpoint_infos(spec_file_info, spec_json))
+
+                                                            if 'paths' in spec_json and 'definitions' in spec_json:
+                                                                endpoint_size = len(spec_json['paths'])
+                                                                property_size = 0
+                                                                for definition in spec_json['definitions'].values():
+                                                                    if 'properties' in definition:
+                                                                        property_size += len(definition['properties'])
+
+                                                                if endpoint_size > 0:
+                                                                    property_ratio = property_size / endpoint_size
+                                                                    spec_file_info.property_ratio = property_ratio
+
                                                         except UnicodeDecodeError:
                                                             logging.warning('failed to read file: {}'.format(json_file))
+
+                                                    spec_file_infos.append(spec_file_info)
 
     with open('spec_file_info.csv', 'w', newline='') as csvfile:
         csvwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -73,20 +86,29 @@ def collect():
 def analysis():
     pd.set_option('display.max_colwidth', -1)
 
-    df = pd.read_csv('spec_endpoint_info.csv', sep=',', header=None)
-    df.columns = ['service', 'plane', 'version', 'endpoint']
-    df.sort_values('version', ascending=False, inplace=True)
-    df.drop_duplicates(['endpoint', 'service'], keep='first', inplace=True)
-    df1 = df.groupby('plane').count()
+    df_endpoint = pd.read_csv('spec_endpoint_info.csv', sep=',', header=None)
+    df_endpoint.columns = ['service', 'plane', 'version', 'endpoint']
+    df_endpoint.drop_duplicates(['endpoint', 'service'], keep='first', inplace=True)
+    df1 = df_endpoint.groupby('plane').count()
     print(str(df1))
 
-    df2 = df.groupby(['plane', 'service']).count().drop('version', axis=1).sort_values('endpoint', ascending=False)
+    df2 = df_endpoint.drop('version', axis=1).groupby(['plane', 'service']).count().sort_values('endpoint', ascending=False)
     print(str(df2.head(50)))
 
     df3 = df2.reset_index().head(20).sort_values('endpoint')
-    colors = tuple(np.where(df3["plane"] == 'data-plane', 'r', 'g'))
+    colors = tuple(np.where(df3['plane'] == 'data-plane', '#D81B60', '#1E88E5'))
     df3.plot(kind='barh', x='service', y='endpoint', color=colors)
+    plt.show()
 
+    df_file = pd.read_csv('spec_file_info.csv', sep=',', header=None)
+    df_file.columns = ['service', 'plane', 'rp', 'state', 'version', 'file', 'ratio']
+
+    df4 = df_file.drop(['rp', 'state', 'version', 'file'], axis=1).groupby(['service', 'plane']).mean().reset_index().sort_values('ratio', ascending=False)
+    print(str(df4.head(50)))
+
+    df4 = df4.head(20).sort_values('ratio', ascending=True)
+    colors = tuple(np.where(df4['plane'] == 'data-plane', '#D81B60', '#1E88E5'))
+    df4.plot(kind='barh', x='service', y='ratio', color=colors)
     plt.show()
 
 
@@ -117,9 +139,10 @@ class SpecFile:
     state: State
     version: str
     name: str
+    property_ratio: float = 0
 
     def csv_row(self):
-        return [self.service, self.plane.value, self.resource_provider, self.state.value, self.version, self.name.lower()]
+        return [self.service, self.plane.value, self.resource_provider, self.state.value, self.version, self.name.lower(), str(self.property_ratio)]
 
 
 def get_spec_endpoint_infos(spec_file_info: SpecFile, spec_json):
@@ -139,4 +162,5 @@ def get_spec_endpoint_infos(spec_file_info: SpecFile, spec_json):
 
 
 if __name__ == '__main__':
+    # data()
     analysis()
