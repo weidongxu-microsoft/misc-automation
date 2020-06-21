@@ -88,28 +88,28 @@ def analysis():
 
     df_endpoint = pd.read_csv('spec_endpoint_info.csv', sep=',', header=None)
     df_endpoint.columns = ['service', 'plane', 'version', 'endpoint']
-    df_endpoint.drop_duplicates(['endpoint', 'service'], keep='first', inplace=True)
-    df1 = df_endpoint.groupby('plane').count()
+    df_endpoint.drop_duplicates(['endpoint', 'service', 'plane'], keep='first', inplace=True)
+    df1 = df_endpoint.drop(['version', 'endpoint'], axis=1).drop_duplicates(['service', 'plane']).groupby('plane').count().reset_index()
     print(str(df1))
 
     df2 = df_endpoint.drop('version', axis=1).groupby(['plane', 'service']).count().sort_values('endpoint', ascending=False)
     print(str(df2.head(50)))
 
-    df3 = df2.reset_index().head(20).sort_values('endpoint')
+    df3 = df2.reset_index().head(10).sort_values('endpoint')
     colors = tuple(np.where(df3['plane'] == 'data-plane', '#D81B60', '#1E88E5'))
     df3.plot(kind='barh', x='service', y='endpoint', color=colors)
     plt.show()
 
-    df_file = pd.read_csv('spec_file_info.csv', sep=',', header=None)
-    df_file.columns = ['service', 'plane', 'rp', 'state', 'version', 'file', 'ratio']
-
-    df4 = df_file.drop(['rp', 'state', 'version', 'file'], axis=1).groupby(['service', 'plane']).mean().reset_index()
-    print(str(df4.head(50)))
-
-    df4 = df4.head(20).sort_values('ratio', ascending=True)
-    colors = tuple(np.where(df4['plane'] == 'data-plane', '#D81B60', '#1E88E5'))
-    df4.plot(kind='barh', x='service', y='ratio', color=colors)
-    plt.show()
+    # df_file = pd.read_csv('spec_file_info.csv', sep=',', header=None)
+    # df_file.columns = ['service', 'plane', 'rp', 'state', 'version', 'file', 'ratio']
+    #
+    # df4 = df_file.drop(['rp', 'state', 'version', 'file'], axis=1).groupby(['service', 'plane']).mean().reset_index()
+    # print(str(df4.head(50)))
+    #
+    # df4 = df4.head(20).sort_values('ratio', ascending=True)
+    # colors = tuple(np.where(df4['plane'] == 'data-plane', '#D81B60', '#1E88E5'))
+    # df4.plot(kind='barh', x='service', y='ratio', color=colors)
+    # plt.show()
 
     # df5 = df4.loc[df4['service'].isin(df3['service'].values)].reset_index()
     # print(str(df5.head(50)))
