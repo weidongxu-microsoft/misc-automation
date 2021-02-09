@@ -25,13 +25,14 @@ def refactor_java(file_path: str):
             line = lines[location]
             if line.strip() == KEYWORD:
                 lines.pop(location)
+                lines[location-1] = lines[location-1].rstrip() + ',\n'
             elif line.strip().startswith(KEYWORD):
                 lines[location] = line.replace(KEYWORD, '')
                 lines[location-1] = lines[location-1].rstrip() + ',\n'
             else:
                 lines[location] = line.replace(KEYWORD, ', ')
 
-            for rel in range(0, -10, -1):
+            for rel in range(0, -15, -1):
                 line = lines[location+rel]
                 if line.strip().startswith('return '):
                     lines[location+rel] = line.replace('return ', 'return PagedConverter.mapPage(')
@@ -54,6 +55,7 @@ def refactor_java(file_path: str):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     for root, dirs, files in os.walk(SDK_REPO):
         for name in files:
             file_path = os.path.join(root, name)
