@@ -7,7 +7,6 @@ KEYWORD = '.mapPage('
 
 
 def refactor_java(file_path: str):
-    lines = []
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
