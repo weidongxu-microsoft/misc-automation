@@ -30,16 +30,22 @@ def update(filepath: str):
     with open(filepath, encoding='utf-8') as f:
         lines = f.readlines()
 
+    modified = False
     out_lines = []
     for line in lines:
         if 'http://localhost:1234/subscriptions/' in line and f'/providers/{RESOURCE_PROVIDER}/' in line:
             for before, after in VERSION_CHANGES.items():
                 if f'api-version={before}' in line:
+                    modified = True
+
                     line = line.replace(f'api-version={before}', f'api-version={after}')
         out_lines.append(line)
 
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(''.join(out_lines))
+    if modified:
+        logging.info(f'update session record {filepath}')
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(''.join(out_lines))
 
 
 main()
