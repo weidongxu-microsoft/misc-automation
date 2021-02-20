@@ -1,0 +1,45 @@
+import os
+import logging
+import json
+
+
+SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
+# SDK_REPO = 'c:/github/azure-libraries-for-java'
+RESOURCE_PROVIDER = 'Microsoft.Compute'
+VERSION_CHANGES = {
+    '2020-05-01': '2020-09-30',
+    '2020-06-01': '2020-12-01'
+}
+
+
+def main():
+    logging.basicConfig(level=logging.INFO)
+    process_session_records()
+
+
+def process_session_records():
+    for root, dirs, files in os.walk(SDK_REPO):
+        for name in files:
+            filepath = os.path.join(root, name)
+            if os.path.splitext(filepath)[1] == '.json' \
+                    and 'session-records' in filepath and 'target' not in filepath:
+                update(filepath)
+
+
+def update(filepath: str):
+    with open(filepath, encoding='utf-8') as f:
+        lines = f.readlines()
+
+    out_lines = []
+    for line in lines:
+        if 'http://localhost:1234/subscriptions/' in line and f'/providers/{RESOURCE_PROVIDER}/' in line:
+            for before, after in VERSION_CHANGES.items():
+                if f'api-version={before}' in line:
+                    line = line.replace(f'api-version={before}', f'api-version={after}')
+        out_lines.append(line)
+
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(''.join(out_lines))
+
+
+main()
