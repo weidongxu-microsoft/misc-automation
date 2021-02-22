@@ -1,14 +1,12 @@
 import os
 import logging
-import json
 
 
 SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
 # SDK_REPO = 'c:/github/azure-libraries-for-java'
-RESOURCE_PROVIDER = 'Microsoft.Compute'
+RESOURCE_PROVIDER = 'Microsoft.Network'
 VERSION_CHANGES = {
-    '2020-06-30': '2020-09-30',
-    '2020-06-01': '2020-12-01'
+    '2020-07-01': '2020-08-01'
 }
 
 
