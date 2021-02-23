@@ -4,9 +4,9 @@ import logging
 
 SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
 # SDK_REPO = 'c:/github/azure-libraries-for-java'
-RESOURCE_PROVIDER = 'Microsoft.Network'
+RESOURCE_PROVIDER = 'Microsoft.Cdn'
 VERSION_CHANGES = {
-    '2020-07-01': '2020-08-01'
+    '2017-10-12': '2020-09-01'
 }
 
 
@@ -31,7 +31,7 @@ def update(filepath: str):
     modified = False
     out_lines = []
     for line in lines:
-        if 'http://localhost:1234/subscriptions/' in line and f'/providers/{RESOURCE_PROVIDER}/' in line:
+        if 'http://localhost:' in line and f'/providers/{RESOURCE_PROVIDER}/' in line:
             for before, after in VERSION_CHANGES.items():
                 if f'api-version={before}' in line:
                     modified = True
