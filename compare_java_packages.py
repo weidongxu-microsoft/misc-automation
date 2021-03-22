@@ -13,7 +13,9 @@ TRACK2_PACKAGE_PREFIX = 'azure-resourcemanager-'
 class SdkInfo:
     sdk: str
     track1: bool = False
+    track1_stable: bool = False
     track2: bool = False
+    track2_stable: bool = False
 
 
 def main():
@@ -35,14 +37,20 @@ def process_java_packages_csv():
             if sdk not in sdk_info:
                 sdk_info[sdk] = SdkInfo(sdk)
             sdk_info[sdk].track1 = True
+            if not version == '':
+                sdk_info[sdk].track1_stable = True
         if package.startswith(TRACK2_PACKAGE_PREFIX) and package != TRACK2_PACKAGE_PREFIX + 'parent':
             sdk = package[len(TRACK2_PACKAGE_PREFIX):]
             if sdk not in sdk_info:
                 sdk_info[sdk] = SdkInfo(sdk)
             sdk_info[sdk].track2 = True
+            if not version == '':
+                sdk_info[sdk].track2_stable = True
 
     for item in sdk_info.values():
-        print('{0: <32}{1: <8}{2: <8}'.format(item.sdk, 'Y' if item.track1 else ' ', 'Y' if item.track2 else ' '))
+        print('{0: <32}{1: <16}{2: <16}'.format(item.sdk,
+                                                'GA' if item.track1_stable else 'beta' if item.track1 else ' ',
+                                                'GA' if item.track2_stable else 'beta' if item.track2 else ' '))
 
 
 main()
