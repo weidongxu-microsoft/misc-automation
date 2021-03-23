@@ -92,6 +92,7 @@ def process_spec(spec_info_collection: SpecInfoCollection) -> SpecTag:
                 break
     readme_path = os.path.join(SPEC_REPO, 'specification', sdk_name, 'resource-manager/readme.md')
     spec_path_list = [item.spec_path for item in spec_info_collection.spec_info_list]
+    spec_path_list = list(set(spec_path_list))
     patch_readme(readme_path, spec_path_list)
     return SpecTag(sdk_name, readme_path, TAG_PROFILE)
 
@@ -136,6 +137,10 @@ def codegen(spec_tag: SpecTag, output_sdk_dir: str) -> subprocess.CompletedProce
         '--java.output-folder=' + output_sdk_dir,
         '--java.namespace=' + namespace,
         spec_tag.readme_path]
+
+    # hack
+    if spec_tag.sdk_name == 'resources':
+        command.append('--title ResourceManagementClient')
 
     logging.info(' '.join(command))
     result = subprocess.run(command, capture_output=False, text=True, encoding='utf-8')
