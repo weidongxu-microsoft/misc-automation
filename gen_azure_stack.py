@@ -8,6 +8,12 @@ import subprocess
 from typing import List
 
 
+# controls
+TOGGLE_PATCH_README = False
+TOGGLE_GENERATE_SDK = False
+TOGGLE_GENERATE_ARM_CODE = True
+
+
 SPEC_REPO = 'c:/github/azure-rest-api-specs'
 PROFILE_PATH = 'profile/2020-09-01-hybrid.json'
 
@@ -37,6 +43,7 @@ class SpecInfoCollection:
 @dataclasses.dataclass
 class SpecTag:
     sdk_name: str
+    sdk_namespace: str
     readme_path: str
     tag: str = TAG_PROFILE
 
@@ -73,13 +80,15 @@ def process_profile():
         spec_tag = process_spec(item)
         spec_tag_list.append(spec_tag)
 
-    for item in spec_tag_list:
-        codegen(item, SDK_OUTPUT_PATH)
+    if TOGGLE_GENERATE_SDK:
+        for item in spec_tag_list:
+            codegen(item, SDK_OUTPUT_PATH)
 
 
 def process_spec(spec_info_collection: SpecInfoCollection) -> SpecTag:
     provider_name = spec_info_collection.provider.split(".")[1]
     sdk_name_set = set()
+    sdk_name = None
     for item in spec_info_collection.spec_info_list:
         sdk_name = re.match('.*/specification/(.*)/resource-manager/.*', item.spec_path).group(1)
         sdk_name_set.add(sdk_name)
@@ -90,11 +99,22 @@ def process_spec(spec_info_collection: SpecInfoCollection) -> SpecTag:
             if name == provider_name:
                 sdk_name = name
                 break
+
+    # hack
+    sdk_namespace = sdk_name
+    if sdk_name == 'web':
+        sdk_namespace = 'appservice'
+    elif sdk_name == 'eventhub':
+        sdk_namespace = 'eventhubs'
+
     readme_path = os.path.join(SPEC_REPO, 'specification', sdk_name, 'resource-manager/readme.md')
-    spec_path_list = [item.spec_path for item in spec_info_collection.spec_info_list]
-    spec_path_list = list(set(spec_path_list))
-    patch_readme(readme_path, spec_path_list)
-    return SpecTag(sdk_name, readme_path, TAG_PROFILE)
+
+    if TOGGLE_PATCH_README:
+        spec_path_list = [item.spec_path for item in spec_info_collection.spec_info_list]
+        spec_path_list = list(set(spec_path_list))
+        patch_readme(readme_path, spec_path_list)
+
+    return SpecTag(sdk_name, sdk_namespace, readme_path, TAG_PROFILE)
 
 
 def patch_readme(readme_path: str, spec_path_list: List[str]):
@@ -117,7 +137,7 @@ def patch_readme(readme_path: str, spec_path_list: List[str]):
 def codegen(spec_tag: SpecTag, output_sdk_dir: str) -> subprocess.CompletedProcess:
     logging.info(f'generate code for RP: {spec_tag.sdk_name}')
 
-    namespace = f'com.azure.resourcemanager.{SDK_AZS_NAMESPACE}.{spec_tag.sdk_name}'.lower()
+    namespace = f'com.azure.resourcemanager.{SDK_AZS_NAMESPACE}.{spec_tag.sdk_namespace}'.lower()
     namespace = re.sub('[^a-z.]', '', namespace)
 
     command = [
