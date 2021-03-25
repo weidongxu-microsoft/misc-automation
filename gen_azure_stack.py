@@ -43,9 +43,16 @@ class SpecInfoCollection:
 @dataclasses.dataclass
 class SpecTag:
     sdk_name: str
-    sdk_namespace: str
-    readme_path: str
-    tag: str = TAG_PROFILE
+    sdk_namespace: str = dataclasses.field(compare=False)
+    readme_path: str = dataclasses.field(compare=False)
+    tag: str = dataclasses.field(default=TAG_PROFILE, compare=False)
+
+
+@dataclasses.dataclass
+class Manager:
+    class_name: str
+    variable_name: str
+    method_name: str
 
 
 def main():
@@ -83,6 +90,9 @@ def process_profile():
     if TOGGLE_GENERATE_SDK:
         for item in spec_tag_list:
             codegen(item, SDK_OUTPUT_PATH)
+
+    if TOGGLE_GENERATE_ARM_CODE:
+        generate_arm_code(spec_tag_list)
 
 
 def process_spec(spec_info_collection: SpecInfoCollection) -> SpecTag:
@@ -165,6 +175,64 @@ def codegen(spec_tag: SpecTag, output_sdk_dir: str) -> subprocess.CompletedProce
     logging.info(' '.join(command))
     result = subprocess.run(command, capture_output=False, text=True, encoding='utf-8')
     return result
+
+
+def generate_arm_code(spec_tag_list: List[SpecTag]):
+    manager_list = []
+    spec_tag_list.remove(SpecTag("authorization", None, None))
+    for spec_tag in spec_tag_list:
+        code_path = os.path.join(SDK_OUTPUT_PATH, 'src/main/java/com/azure/resourcemanager',
+                                 SDK_AZS_NAMESPACE, spec_tag.sdk_namespace)
+        for file in os.listdir(code_path):
+            if file.endswith('Manager.java'):
+                class_name = file.split('.')[0]
+                variable_name = class_name[0].lower() + class_name[1:]
+                method_name = variable_name[0:len(variable_name) - len('Manager')]
+                manager_list.append(Manager(class_name, variable_name, method_name))
+                break
+
+    # variables
+    for manager in manager_list:
+        print(f'private final {manager.class_name} {manager.variable_name};\n')
+
+    # methods
+    for manager in manager_list:
+        print((f'/** @return the {{@link {manager.class_name}}}. */\n'
+               f'public {manager.class_name} {manager.method_name}() {{\n'
+               f'    return {manager.variable_name};\n'
+               f'}}\n'))
+
+    # initialization
+    for manager in manager_list:
+        print(f'{manager.class_name}.Configurable {manager.variable_name}Configurable = {manager.class_name}.configure();')
+    print()
+    print('''HttpClient httpClient = configurable.httpClient;
+if (httpClient == null) {
+    httpClient = HttpClient.createDefault();
+}
+if (httpClient != null) {''')
+    for manager in manager_list:
+        print(f'   {manager.variable_name}Configurable.withHttpClient(httpClient);')
+    print('''}
+if (configurable.httpLogOptions != null) {''')
+    for manager in manager_list:
+        print(f'   {manager.variable_name}Configurable.withLogOptions(configurable.httpLogOptions);')
+    print('''}
+if (configurable.retryPolicy != null) {''')
+    for manager in manager_list:
+        print(f'   {manager.variable_name}Configurable.withRetryPolicy(configurable.retryPolicy);')
+    print('''}
+for (HttpPipelinePolicy policy : configurable.policies) {''')
+    for manager in manager_list:
+        print(f'   {manager.variable_name}Configurable.withPolicy(policy);')
+    print('''}
+if (configurable.defaultPollInterval != null) {''')
+    for manager in manager_list:
+        print(f'   {manager.variable_name}Configurable.withDefaultPollInterval(configurable.defaultPollInterval);')
+    print('}')
+    print()
+    for manager in manager_list:
+        print(f'this.{manager.variable_name} = {manager.variable_name}Configurable.authenticate(credential, profile);')
 
 
 main()
