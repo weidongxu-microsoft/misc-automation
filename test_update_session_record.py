@@ -4,9 +4,9 @@ import logging
 
 SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
 # SDK_REPO = 'c:/github/azure-libraries-for-java'
-RESOURCE_PROVIDER = 'Microsoft.Cdn'
+RESOURCE_PROVIDER = 'Microsoft.DocumentDB'
 VERSION_CHANGES = {
-    '2017-10-12': '2020-09-01'
+    '2021-01-15': '2021-03-15'
 }
 
 
