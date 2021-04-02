@@ -63,7 +63,7 @@ def compare_version(current_ver: str, exist_ver: str) -> str:
         current_ver = current_ver[:-len('_preview')]
 
     if current_ver.startswith('v') and (not exist_ver or current_ver > exist_ver):
-        return current_ver
+        return current_ver[1:]
     else:
         return exist_ver
 
