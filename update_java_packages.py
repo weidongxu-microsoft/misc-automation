@@ -54,13 +54,17 @@ def update_new_arm_packages(rows: List[Dict], rows_all: List[Dict]):
         if row['RepoPath'] == 'NA':
             row['RepoPath'] = sdk_name
 
-        readme_data = urlopen(f'https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/{sdk_name}/resource-manager/readme.md').read()
-        readme_str = readme_data.decode('utf-8')
-        lines = readme_str.split('\n')
-        for line in lines:
-            if line.startswith('# '):
-                service_name = line[2:]
-                break
+        try:
+            readme_data = urlopen(f'https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/{sdk_name}/resource-manager/readme.md').read()
+            readme_str = readme_data.decode('utf-8')
+            lines = readme_str.split('\n')
+            for line in lines:
+                if line.startswith('# '):
+                    service_name = line[2:]
+                    break
+        except Exception as e:
+            logging.exception(e)
+            service_name = sdk_name
         row['ServiceName'] = service_name
         row['DisplayName'] = 'Resource Management - ' + service_name
 
