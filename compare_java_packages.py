@@ -2,12 +2,14 @@ import dataclasses
 import logging
 import csv
 import re
+from typing import List
 from urllib.request import urlopen
 
 
 CSV_PATH = 'https://raw.githubusercontent.com/Azure/azure-sdk/master/_data/releases/latest/java-packages.csv'
 TRACK1_PACKAGE_PREFIX = 'azure-mgmt-'
 TRACK2_PACKAGE_PREFIX = 'azure-resourcemanager-'
+CSV_FILENAME = 'compare_java_packages.csv'
 
 
 @dataclasses.dataclass
@@ -19,6 +21,13 @@ class SdkInfo:
     track2: bool = False
     track2_stable: bool = False
     track2_api_version: str = None
+
+    def to_row(self) -> List[str]:
+        return [self.sdk,
+                ('GA' if self.track1_stable else 'beta') if self.track1 else None,
+                ('GA' if self.track2_stable else 'beta') if self.track2 else None,
+                self.track1_api_version,
+                self.track2_api_version]
 
 
 def main():
@@ -45,7 +54,8 @@ def process_java_packages_csv():
             if not version == '':
                 sdk_info[sdk].track1_stable = True
             # update version, take the latest
-            sdk_info[sdk].track1_api_version = compare_version(namespace.split('.')[-1], sdk_info[sdk].track1_api_version)
+            sdk_info[sdk].track1_api_version = compare_version(namespace.split('.')[-1],
+                                                               sdk_info[sdk].track1_api_version)
         if package.startswith(TRACK2_PACKAGE_PREFIX) and package != TRACK2_PACKAGE_PREFIX + 'parent':
             sdk = package[len(TRACK2_PACKAGE_PREFIX):]
             if sdk not in sdk_info:
@@ -68,6 +78,14 @@ def process_java_packages_csv():
             ('GA' if item.track2_stable else 'beta') if item.track2 else ' ',
             item.track1_api_version if item.track1_api_version else ' ',
             item.track2_api_version if item.track2_api_version else ' '))
+
+    logging.info(f'write csv: {CSV_FILENAME}')
+    with open(CSV_FILENAME, 'w', newline='') as f:
+        writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        writer.writerow(['service', 'track1', 'track2', 'track1 api', 'track2 api'])
+        for item in sdk_info.values():
+            writer.writerow(item.to_row())
 
 
 def get_track2_version(package: str, version: str) -> str or None:
