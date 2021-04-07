@@ -9,8 +9,8 @@ from typing import List
 
 
 # controls
-TOGGLE_PATCH_README = False
-TOGGLE_GENERATE_SDK = False
+TOGGLE_PATCH_README = True
+TOGGLE_GENERATE_SDK = True
 TOGGLE_GENERATE_ARM_CODE = True
 
 
@@ -19,8 +19,8 @@ PROFILE_PATH = 'profile/2020-09-01-hybrid.json'
 
 TAG_PROFILE = 'package-profile-2020-09-01-hybrid'
 
-SDK_OUTPUT_PATH = 'c:/github_lab/azure-stack-java-samples/azure-resourcemanager-azurestack'
-SDK_AZS_NAMESPACE = 'azurestack'
+SDK_OUTPUT_PATH = 'c:/github_lab/azure-stack-java-samples/azure-resourcemanager-hybrid'
+SDK_AZS_NAMESPACE = 'hybrid'
 
 AUTOREST_JAVA_PATH = 'c:/github_fork/autorest.java'
 AUTOREST_CORE_VERSION = '3.1.3'
@@ -157,7 +157,7 @@ def codegen(spec_tag: SpecTag, output_sdk_dir: str) -> subprocess.CompletedProce
         '--java',
         '--use=' + AUTOREST_JAVA_PATH,
         '--tag=' + TAG_PROFILE,
-        '--regenerate-pom=false'
+        '--regenerate-pom=false',
         '--pipeline.modelerfour.additional-checks=false',
         '--pipeline.modelerfour.lenient-model-deduplication=true',
         '--azure-arm',
@@ -170,7 +170,9 @@ def codegen(spec_tag: SpecTag, output_sdk_dir: str) -> subprocess.CompletedProce
 
     # hack
     if spec_tag.sdk_name == 'resources':
-        command.append('--title ResourceManagementClient')
+        command.append('--title=ResourceManagementClient')
+    if spec_tag.sdk_name == 'authorization':
+        command.append('--title=AuthorizationManagementClient')
 
     logging.info(' '.join(command))
     result = subprocess.run(command, capture_output=False, text=True, encoding='utf-8')
@@ -179,7 +181,6 @@ def codegen(spec_tag: SpecTag, output_sdk_dir: str) -> subprocess.CompletedProce
 
 def generate_arm_code(spec_tag_list: List[SpecTag]):
     manager_list = []
-    spec_tag_list.remove(SpecTag("authorization", None, None))
     for spec_tag in spec_tag_list:
         code_path = os.path.join(SDK_OUTPUT_PATH, 'src/main/java/com/azure/resourcemanager',
                                  SDK_AZS_NAMESPACE, spec_tag.sdk_namespace)
