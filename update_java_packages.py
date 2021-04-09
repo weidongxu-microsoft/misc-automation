@@ -28,12 +28,27 @@ def process_java_packages_csv():
 
     update_new_arm_packages(rows, rows_all)
 
+    # rows_all = update_support(rows_all)
+
     with open(csv_filename, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
 
         writer.writeheader()
         for row in rows_all:
             writer.writerow(row)
+
+
+def update_support(rows_all: List[Dict]) -> List[Dict]:
+    rows = []
+    for row in rows_all:
+        if row['Support'] == '':
+            sdk_name = row['Package']
+            if sdk_name.startswith('azure-mgmt-'):
+                row['Support'] = 'maintenance'
+            elif sdk_name.startswith('azure-resourcemanager'):
+                row['Support'] = 'preview' if row['VersionGA'] == '' else 'active'
+        rows.append(row)
+    return rows
 
 
 def collect_new_arm_packages(rows_all: List[Dict]) -> List[Dict]:
@@ -67,6 +82,7 @@ def update_new_arm_packages(rows: List[Dict], rows_all: List[Dict]):
             service_name = sdk_name
         row['ServiceName'] = service_name
         row['DisplayName'] = 'Resource Management - ' + service_name
+        row['Support'] = 'preview' if row['VersionGA'] == '' else 'active'
 
 
 main()
