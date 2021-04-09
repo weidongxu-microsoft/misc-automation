@@ -4,9 +4,9 @@ import logging
 
 SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
 # SDK_REPO = 'c:/github/azure-libraries-for-java'
-RESOURCE_PROVIDER = 'Microsoft.Network'
+RESOURCE_PROVIDER = 'Microsoft.ContainerService'
 VERSION_CHANGES = {
-    '2020-08-01': '2020-11-01'
+    '2020-11-01': '2021-03-01'
 }
 
 
