@@ -71,7 +71,10 @@ def process_java_packages_csv():
         'service', 'track1', 'track2', 'track1 api', 'track2 api'))
     print()
 
-    for item in sdk_info.values():
+    sdk_info_list = [item for item in sdk_info.values()]
+    sdk_info_list.sort(key=lambda r: ('2.' if r.track2_api_version else '1.') + r.sdk)
+
+    for item in sdk_info_list:
         print('{0: <32}{1: <16}{2: <16}{3: <16}{4: <16}'.format(
             item.sdk,
             ('GA' if item.track1_stable else 'beta') if item.track1 else ' ',
@@ -84,7 +87,7 @@ def process_java_packages_csv():
         writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         writer.writerow(['service', 'track1', 'track2', 'track1 api', 'track2 api'])
-        for item in sdk_info.values():
+        for item in sdk_info_list:
             writer.writerow(item.to_row())
 
 
