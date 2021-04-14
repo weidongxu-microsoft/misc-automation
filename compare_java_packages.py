@@ -67,12 +67,33 @@ def process_java_packages_csv():
                 package,
                 row['VersionPreview'] if version == '' else version)
 
+    sdk_info_list = [item for item in sdk_info.values()]
+    sdk_info_list.sort(key=lambda r: ('2.' if r.track2_api_version else '1.') + r.sdk)
+
+    known_track1_alias = ['cosmosdb',       # cosmos
+                          'eventhub',       # eventhubs
+                          'features',
+                          'graph-rbac',     # authentication
+                          'locks',
+                          'media',          # mediaservices
+                          'policy',
+                          'website'         # appservice
+                          ]
+
+    print(f'Number of track1 packages: '
+          + str(len([item for item in sdk_info_list
+                     if item.track1 and (item.track1_api_version or item.track1_stable)])))
+    print(f'Number of track2 packages: '
+          + str(len([item for item in sdk_info_list if item.track2])))
+    print(f'Number of track1 packages not having track2: '
+          + str(len([item for item in sdk_info_list
+                     if item.track1 and (item.track1_api_version or item.track1_stable)
+                     and (not item.track2 and item.sdk not in known_track1_alias)])))
+    print()
+
     print('{0: <32}{1: <16}{2: <16}{3: <16}{4: <16}'.format(
         'service', 'track1', 'track2', 'track1 api', 'track2 api'))
     print()
-
-    sdk_info_list = [item for item in sdk_info.values()]
-    sdk_info_list.sort(key=lambda r: ('2.' if r.track2_api_version else '1.') + r.sdk)
 
     for item in sdk_info_list:
         print('{0: <32}{1: <16}{2: <16}{3: <16}{4: <16}'.format(
