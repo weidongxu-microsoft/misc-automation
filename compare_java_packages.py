@@ -125,10 +125,28 @@ def join_kpi_csv(sdk_info_list: List[SdkInfo]):
             namespace = swagger_info[item.sdk]
             if namespace in kpi_info:
                 kpi_items = kpi_info[namespace]
-                item.ring = kpi_items[0].ring
-                item.traffic = kpi_items[0].traffic
-                item.completeness = kpi_items[0].completeness
-                item.correctness = kpi_items[0].correctness
+
+                found = False
+                if len(kpi_items) > 1:
+                    for kpi_item in kpi_items:
+                        if item.sdk in kpi_item.name.lower().replace(' ', ''):
+                            found = True
+                            item.ring = kpi_item.ring
+                            item.traffic = kpi_item.traffic
+                            item.completeness = kpi_item.completeness
+                            item.correctness = kpi_item.correctness
+                            break
+
+                    if not found:
+                        logging.info('sdk: ' + item.sdk)
+                        logging.info('multiple service candidates: ' + str([r.name for r in kpi_items]))
+
+                if not found:
+                    kpi_item = kpi_items[0]
+                    item.ring = kpi_item.ring
+                    item.traffic = kpi_item.traffic
+                    item.completeness = kpi_item.completeness
+                    item.correctness = kpi_item.correctness
 
 
 def print_stdout(sdk_info_list: List[SdkInfo]):
