@@ -213,7 +213,7 @@ def print_stdout(sdk_info_list: List[SdkInfo]):
                      and (not item.track2 and item.sdk not in known_track1_alias)])))
     print()
 
-    print('{0: <32}{1: <16}{2: <16}{3: <16}{4: <16}'.format(
+    print('{0: <32}{1: <16}{2: <16}{3: <16}{4: <16}{5: <16}{6: <16}{7: <16}{8: <16}'.format(
         'service', 'track1', 'track2', 'track1 api', 'track2 api', 'ring', 'traffic', 'completeness', 'coverage'))
     print()
 
@@ -226,7 +226,7 @@ def print_stdout(sdk_info_list: List[SdkInfo]):
             ('GA' if item.track1_stable else 'beta') if item.track1 else '',
             ('GA' if item.track2_stable else 'beta') if item.track2 else '',
             xstr(item.track1_api_version), xstr(item.track2_api_version),
-            xstr(item.ring), xstr(item.traffic),
+            xstr(item.ring), f'{item.traffic:,}' if item.traffic else '',
             xstr(xround(item.completeness, 2)), xstr(xround(item.correctness, 2))))
 
 
