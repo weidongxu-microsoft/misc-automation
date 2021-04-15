@@ -3,7 +3,8 @@ import logging
 import csv
 import re
 import os
-from typing import List
+import yaml
+from typing import List, Dict
 from urllib.request import urlopen
 
 
@@ -13,10 +14,10 @@ TRACK2_PACKAGE_PREFIX = 'azure-resourcemanager-'
 
 CSV_FILENAME = 'compare_java_packages.csv'
 
-SWAGGER_SDK_URL = 'https://github.com/Azure/azure-sdk-for-java/blob/master/eng/mgmt/automation/api-specs.yaml'
+SWAGGER_SDK_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk-for-java/master/eng/mgmt/automation/api-specs.yaml'
 
 SWAGGER_METADATA_FILENAME = 'swagger_metadata.csv'
-REST_KPI_FILENAME = 'kpi_202103.csv'
+REST_KPI_FILENAME = 'kpi_7d.csv'
 
 
 @dataclasses.dataclass
@@ -30,7 +31,7 @@ class SdkInfo:
     track2_api_version: str = None
 
     ring: str = None
-    traffic: float = None
+    traffic: int = None
     completeness: float = None
     correctness: float = None
 
@@ -47,7 +48,7 @@ class KpiInfo:
     namespace: str
     name: str
     ring: str
-    traffic: float = None
+    traffic: int = None
     completeness: float = None
     correctness: float = None
 
@@ -103,53 +104,91 @@ def join_kpi_csv(sdk_info_list: List[SdkInfo]):
     if not os.path.isfile(SWAGGER_METADATA_FILENAME) or not os.path.isfile(REST_KPI_FILENAME):
         return
 
-    swagger_info = {}
+    swagger_sdk_map = {}
+    logging.info(f'query yml: {SWAGGER_SDK_URL}')
+    with urlopen(SWAGGER_SDK_URL) as yaml_response:
+        yaml_data = yaml_response.read()
+        yaml_data = yaml_data.decode('utf-8')
+        swagger_sdk = yaml.safe_load(yaml_data)
+        for key in swagger_sdk:
+            value = swagger_sdk[key]
+            if 'service' in value:
+                swagger_sdk_map[key] = value['service']
+
+    sdk_namespace_map = {}
     with open(SWAGGER_METADATA_FILENAME, 'r', newline='', encoding='utf-8') as f:
         csv_reader = csv.DictReader(f, delimiter=',', quotechar='"')
         for row in csv_reader:
             namespace = row['ProviderNamespace'].strip().upper()
             if namespace.startswith('MICROSOFT.'):
-                swagger_info[row['specRootFolderName']] = namespace
+                swagger_name = row['specRootFolderName']
+                if swagger_name in swagger_sdk_map:
+                    sdk_name = swagger_sdk_map[swagger_name]
+                else:
+                    sdk_name = swagger_name
+                sdk_namespace_map[sdk_name] = namespace
 
-    kpi_info = {}
+    kpi_info: Dict[str, List[KpiInfo]] = {}
     with open(REST_KPI_FILENAME, 'r', newline='', encoding='utf-8') as f:
         csv_reader = csv.DictReader(f, delimiter=',', quotechar='"')
         for row in csv_reader:
             namespace = row['resourceProviderName'].strip().upper()
             if namespace.startswith('MICROSOFT.'):
                 kpi_item = KpiInfo(namespace, row['ServiceName'].strip(), row['ServiceRing'].strip(),
-                                   float(row['trafficCount']), float(row['completeness']), float(row['correctness']))
+                                   int(row['trafficCount']), float(row['completeness']), float(row['correctness']))
                 if namespace not in kpi_info:
                     kpi_info[namespace] = []
                 kpi_info[namespace].append(kpi_item)
 
     for item in sdk_info_list:
-        if item.sdk in swagger_info:
-            namespace = swagger_info[item.sdk]
-            if namespace in kpi_info:
-                kpi_items = kpi_info[namespace]
+        kpi_item = find_kpi(item.sdk, sdk_namespace_map, kpi_info)
+        if kpi_item:
+            item.ring = kpi_item.ring
+            item.traffic = kpi_item.traffic
+            item.completeness = kpi_item.completeness
+            item.correctness = kpi_item.correctness
 
-                found = False
-                if len(kpi_items) > 1:
+
+def find_kpi(sdk: str, sdk_namespace_map: Dict[str, str], kpi_info: Dict[str, List[KpiInfo]]) -> KpiInfo or None:
+    sdk_service_name_map = {
+        'healthcareapis': 'FHIR Server',
+        'hybridcompute': 'Hybrid Resource Provider',
+        'mixedreality': 'Azure Object Anchors',     # 'Remote Rendering'
+        'powerbidedicated': 'Power BI',
+        'authorization': 'Policy Administration Service',
+        'containerservice': 'Azure Kubernetes Service',
+        'privatedns': 'Azure DNS Private Zones',
+        'recoveryservices': 'Backup (MAB)',
+        'resources': 'Azure Resource Manager',
+        'trafficmanager': 'WATM',
+
+        'dns': 'Azure DNS - Public Zones',
+        'redis': 'Redis Cache',
+        'network': 'Regional Network Manager'
+    }
+
+    if sdk in sdk_namespace_map:
+        namespace = sdk_namespace_map[sdk]
+        if namespace in kpi_info:
+            kpi_items = kpi_info[namespace]
+
+            if len(kpi_items) > 1:
+                if sdk in sdk_service_name_map:
+                    service_name = sdk_service_name_map[sdk]
                     for kpi_item in kpi_items:
-                        if item.sdk in kpi_item.name.lower().replace(' ', ''):
-                            found = True
-                            item.ring = kpi_item.ring
-                            item.traffic = kpi_item.traffic
-                            item.completeness = kpi_item.completeness
-                            item.correctness = kpi_item.correctness
-                            break
+                        if service_name == kpi_item.name:
+                            return kpi_item
+                else:
+                    for kpi_item in kpi_items:
+                        if sdk.replace('-', '') in kpi_item.name.lower().replace(' ', ''):
+                            return kpi_item
 
-                    if not found:
-                        logging.info('sdk: ' + item.sdk)
-                        logging.info('multiple service candidates: ' + str([r.name for r in kpi_items]))
+                logging.info('sdk: ' + sdk)
+                logging.info('multiple service candidates: ' + str([r.name for r in kpi_items]))
 
-                if not found:
-                    kpi_item = kpi_items[0]
-                    item.ring = kpi_item.ring
-                    item.traffic = kpi_item.traffic
-                    item.completeness = kpi_item.completeness
-                    item.correctness = kpi_item.correctness
+            return kpi_items[0]
+    else:
+        return None
 
 
 def print_stdout(sdk_info_list: List[SdkInfo]):
@@ -187,7 +226,7 @@ def print_stdout(sdk_info_list: List[SdkInfo]):
             ('GA' if item.track1_stable else 'beta') if item.track1 else '',
             ('GA' if item.track2_stable else 'beta') if item.track2 else '',
             xstr(item.track1_api_version), xstr(item.track2_api_version),
-            xstr(item.ring), xstr(xround(item.traffic, 0)),
+            xstr(item.ring), xstr(item.traffic),
             xstr(xround(item.completeness, 2)), xstr(xround(item.correctness, 2))))
 
 
