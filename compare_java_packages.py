@@ -7,13 +7,16 @@ from typing import List
 from urllib.request import urlopen
 
 
-CSV_PATH = 'https://raw.githubusercontent.com/Azure/azure-sdk/master/_data/releases/latest/java-packages.csv'
+CSV_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk/master/_data/releases/latest/java-packages.csv'
 TRACK1_PACKAGE_PREFIX = 'azure-mgmt-'
 TRACK2_PACKAGE_PREFIX = 'azure-resourcemanager-'
+
 CSV_FILENAME = 'compare_java_packages.csv'
 
+SWAGGER_SDK_URL = 'https://github.com/Azure/azure-sdk-for-java/blob/master/eng/mgmt/automation/api-specs.yaml'
+
 SWAGGER_METADATA_FILENAME = 'swagger_metadata.csv'
-KPI_LAST_30D_FILENAME = 'kpi_last_30d.csv'
+REST_KPI_FILENAME = 'kpi_202103.csv'
 
 
 @dataclasses.dataclass
@@ -60,8 +63,8 @@ def run():
 def process_java_packages_csv() -> List[SdkInfo]:
     sdk_info = {}
 
-    logging.info(f'query csv: {CSV_PATH}')
-    with urlopen(CSV_PATH) as csv_response:
+    logging.info(f'query csv: {CSV_URL}')
+    with urlopen(CSV_URL) as csv_response:
         csv_data = csv_response.read()
         csv_str = csv_data.decode('utf-8')
         csv_reader = csv.DictReader(csv_str.split('\n'), delimiter=',', quotechar='"')
@@ -97,7 +100,7 @@ def process_java_packages_csv() -> List[SdkInfo]:
 
 
 def join_kpi_csv(sdk_info_list: List[SdkInfo]):
-    if not os.path.isfile(SWAGGER_METADATA_FILENAME) or not os.path.isfile(KPI_LAST_30D_FILENAME):
+    if not os.path.isfile(SWAGGER_METADATA_FILENAME) or not os.path.isfile(REST_KPI_FILENAME):
         return
 
     swagger_info = {}
@@ -109,7 +112,7 @@ def join_kpi_csv(sdk_info_list: List[SdkInfo]):
                 swagger_info[row['specRootFolderName']] = namespace
 
     kpi_info = {}
-    with open(KPI_LAST_30D_FILENAME, 'r', newline='', encoding='utf-8') as f:
+    with open(REST_KPI_FILENAME, 'r', newline='', encoding='utf-8') as f:
         csv_reader = csv.DictReader(f, delimiter=',', quotechar='"')
         for row in csv_reader:
             namespace = row['resourceProviderName'].strip().upper()
