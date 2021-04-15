@@ -11,6 +11,9 @@ TRACK1_PACKAGE_PREFIX = 'azure-mgmt-'
 TRACK2_PACKAGE_PREFIX = 'azure-resourcemanager-'
 CSV_FILENAME = 'compare_java_packages.csv'
 
+SWAGGER_METADATA_FILENAME = 'swagger_metadata.csv'
+KPI_LAST_30D_FILENAME = 'kpi_last_30d.csv'
+
 
 @dataclasses.dataclass
 class SdkInfo:
@@ -22,6 +25,11 @@ class SdkInfo:
     track2_stable: bool = False
     track2_api_version: str = None
 
+    ring: str = None
+    traffic: int = None
+    completeness: int = None
+    correctness: int = None
+
     def to_row(self) -> List[str]:
         return [self.sdk,
                 ('GA' if self.track1_stable else 'beta') if self.track1 else None,
@@ -30,12 +38,14 @@ class SdkInfo:
                 self.track2_api_version]
 
 
-def main():
+def run():
     logging.basicConfig(level=logging.INFO)
-    process_java_packages_csv()
+    sdk_info_list = process_java_packages_csv()
+    print_stdout(sdk_info_list)
+    write_csv(sdk_info_list)
 
 
-def process_java_packages_csv():
+def process_java_packages_csv() -> List[SdkInfo]:
     sdk_info = {}
 
     logging.info(f'query csv: {CSV_PATH}')
@@ -70,6 +80,10 @@ def process_java_packages_csv():
     sdk_info_list = [item for item in sdk_info.values()]
     sdk_info_list.sort(key=lambda r: ('2.' if r.track2_api_version else '1.') + r.sdk)
 
+    return sdk_info_list
+
+
+def print_stdout(sdk_info_list: List[SdkInfo]):
     known_track1_alias = ['cosmosdb',       # cosmos
                           'eventhub',       # eventhubs
                           'features',
@@ -103,6 +117,8 @@ def process_java_packages_csv():
             item.track1_api_version if item.track1_api_version else ' ',
             item.track2_api_version if item.track2_api_version else ' '))
 
+
+def write_csv(sdk_info_list: List[SdkInfo]):
     logging.info(f'write csv: {CSV_FILENAME}')
     with open(CSV_FILENAME, 'w', newline='') as f:
         writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -155,4 +171,5 @@ def compare_version(current_ver: str, exist_ver: str) -> str:
         return exist_ver
 
 
-main()
+if __name__ == "__main__":
+    run()
