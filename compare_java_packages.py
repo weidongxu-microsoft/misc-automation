@@ -163,7 +163,8 @@ def find_kpi(sdk: str, sdk_namespace_map: Dict[str, str], kpi_info: Dict[str, Li
 
         'dns': 'Azure DNS - Public Zones',
         'redis': 'Redis Cache',
-        'network': 'Regional Network Manager'
+        'network': 'Regional Network Manager',
+        'monitor': 'Azure Notification Service'
     }
 
     if sdk in sdk_namespace_map:
