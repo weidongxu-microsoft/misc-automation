@@ -3,9 +3,15 @@ import logging
 import csv
 import re
 import os
-import yaml
 from typing import List, Dict
 from urllib.request import urlopen
+
+import yaml
+try:
+    import pyodbc
+except ImportError:
+    pyodbc = None
+    pass    # pyodbc is required only when KPI_CONNECTION_STRING is set in environment variables
 
 
 CSV_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk/master/_data/releases/latest/java-packages.csv'
@@ -18,6 +24,7 @@ SWAGGER_SDK_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk-for-java/ma
 
 SWAGGER_METADATA_FILENAME = 'swagger_metadata.csv'
 REST_KPI_FILENAME = 'kpi_7d.csv'
+REST_KPI_CONNECTION_STRING_ENV = 'KPI_CONNECTION_STRING'
 
 
 @dataclasses.dataclass
@@ -100,7 +107,7 @@ def process_java_packages_csv() -> List[SdkInfo]:
 
 
 def join_kpi_csv(sdk_info_list: List[SdkInfo]):
-    if not os.path.isfile(SWAGGER_METADATA_FILENAME) or not os.path.isfile(REST_KPI_FILENAME):
+    if not os.path.isfile(SWAGGER_METADATA_FILENAME):
         return
 
     swagger_sdk_map = {}
@@ -127,17 +134,7 @@ def join_kpi_csv(sdk_info_list: List[SdkInfo]):
                     sdk_name = swagger_name
                 sdk_namespace_map[sdk_name] = namespace
 
-    kpi_info: Dict[str, List[KpiInfo]] = {}
-    with open(REST_KPI_FILENAME, 'r', newline='', encoding='utf-8') as f:
-        csv_reader = csv.DictReader(f, delimiter=',', quotechar='"')
-        for row in csv_reader:
-            namespace = row['resourceProviderName'].strip().upper()
-            if namespace.startswith('MICROSOFT.'):
-                kpi_item = KpiInfo(namespace, row['ServiceName'].strip(), row['ServiceRing'].strip(),
-                                   int(row['trafficCount']), float(row['completeness']), float(row['correctness']))
-                if namespace not in kpi_info:
-                    kpi_info[namespace] = []
-                kpi_info[namespace].append(kpi_item)
+    kpi_info: Dict[str, List[KpiInfo]] = query_kpi_info()
 
     for item in sdk_info_list:
         kpi_item = find_kpi(item.sdk, sdk_namespace_map, kpi_info)
@@ -146,6 +143,46 @@ def join_kpi_csv(sdk_info_list: List[SdkInfo]):
             item.traffic = kpi_item.traffic
             item.completeness = kpi_item.completeness
             item.correctness = kpi_item.correctness
+
+
+def query_kpi_info() -> Dict[str, List[KpiInfo]]:
+    kpi_info: Dict[str, List[KpiInfo]] = {}
+
+    if REST_KPI_CONNECTION_STRING_ENV in os.environ and pyodbc:
+        logging.info(f'query database')
+        connection_string = os.environ[REST_KPI_CONNECTION_STRING_ENV]
+        with pyodbc.connect(connection_string) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'select resourceProviderName, ServiceName, ServiceRing, trafficCount, completeness, correctness'
+                '  from MonthlySwaggerKPI'
+                '  join resourceProvidersMetadata'
+                '    on MonthlySwaggerKPI.serviceId = resourceProvidersMetadata.ServiceId'
+                '    and MonthlySwaggerKPI.resourceProviderName = resourceProvidersMetadata.[Namespace]'
+                "  where month = 'last7days' and environment = 'prod' and validatorId = 'default'"
+                '  order by resourceProviderName asc'
+            )
+            for row in cursor:
+                namespace = row[0].strip().upper()
+                if namespace.startswith('MICROSOFT.'):
+                    kpi_item = KpiInfo(namespace, row[1].strip(), row[2].strip(),
+                                       int(row[3]), float(row[4]), float(row[5]))
+                    if namespace not in kpi_info:
+                        kpi_info[namespace] = []
+                    kpi_info[namespace].append(kpi_item)
+    else:
+        with open(REST_KPI_FILENAME, 'r', newline='', encoding='utf-8') as f:
+            csv_reader = csv.DictReader(f, delimiter=',', quotechar='"')
+            for row in csv_reader:
+                namespace = row['resourceProviderName'].strip().upper()
+                if namespace.startswith('MICROSOFT.'):
+                    kpi_item = KpiInfo(namespace, row['ServiceName'].strip(), row['ServiceRing'].strip(),
+                                       int(row['trafficCount']), float(row['completeness']), float(row['correctness']))
+                    if namespace not in kpi_info:
+                        kpi_info[namespace] = []
+                    kpi_info[namespace].append(kpi_item)
+
+    return kpi_info
 
 
 def find_kpi(sdk: str, sdk_namespace_map: Dict[str, str], kpi_info: Dict[str, List[KpiInfo]]) -> KpiInfo or None:
@@ -184,7 +221,7 @@ def find_kpi(sdk: str, sdk_namespace_map: Dict[str, str], kpi_info: Dict[str, Li
                             return kpi_item
 
                 logging.info('sdk: ' + sdk)
-                logging.info('multiple service candidates: ' + str([r.name for r in kpi_items]))
+                logging.warning('multiple service candidates: ' + str([r.name for r in kpi_items]))
 
             return kpi_items[0]
     else:
