@@ -53,12 +53,11 @@ class KpiInfo:
     correctness: float = None
 
 
-def run():
-    logging.basicConfig(level=logging.INFO)
-    sdk_info_list = process_java_packages_csv()
-    join_kpi_csv(sdk_info_list)
-    print_stdout(sdk_info_list)
-    write_csv(sdk_info_list)
+@dataclasses.dataclass
+class AggregatedInfo:
+    count_track1: int
+    count_track2: int
+    count_track1_but_no_track2: int
 
 
 def process_java_packages_csv() -> List[SdkInfo]:
@@ -192,33 +191,19 @@ def find_kpi(sdk: str, sdk_namespace_map: Dict[str, str], kpi_info: Dict[str, Li
 
 
 def print_stdout(sdk_info_list: List[SdkInfo]):
-    known_track1_alias = ['cosmosdb',       # cosmos
-                          'eventhub',       # eventhubs
-                          'features',
-                          'graph-rbac',     # authentication
-                          'locks',
-                          'media',          # mediaservices
-                          'policy',
-                          'website'         # appservice
-                          ]
+    xround = lambda r, n: None if r is None else round(r, n)
+    xstr = lambda s: '' if s is None else str(s)
 
-    print(f'Number of track1 packages: '
-          + str(len([item for item in sdk_info_list
-                     if item.track1 and (item.track1_api_version or item.track1_stable)])))
-    print(f'Number of track2 packages: '
-          + str(len([item for item in sdk_info_list if item.track2])))
-    print(f'Number of track1 packages not having track2: '
-          + str(len([item for item in sdk_info_list
-                     if item.track1 and (item.track1_api_version or item.track1_stable)
-                     and (not item.track2 and item.sdk not in known_track1_alias)])))
+    aggregated_info = aggregate_info(sdk_info_list)
+
+    print(f'Number of track1 packages: {str(aggregated_info.count_track1)}')
+    print(f'Number of track2 packages: {str(aggregated_info.count_track2)}')
+    print(f'Number of track1 packages not having track2: {str(aggregated_info.count_track1_but_no_track2)}')
     print()
 
     print('{0: <32}{1: <16}{2: <16}{3: <16}{4: <16}{5: <16}{6: <16}{7: <16}{8: <16}'.format(
         'service', 'track1', 'track2', 'track1 api', 'track2 api', 'ring', 'traffic', 'completeness', 'coverage'))
     print()
-
-    xround = lambda r, n: None if r is None else round(r, n)
-    xstr = lambda s: '' if s is None else str(s)
 
     for item in sdk_info_list:
         print('{0: <32}{1: <16}{2: <16}{3: <16}{4: <16}{5: <16}{6: <16}{7: <16}{8: <16}'.format(
@@ -230,6 +215,39 @@ def print_stdout(sdk_info_list: List[SdkInfo]):
             xstr(xround(item.completeness, 2)), xstr(xround(item.correctness, 2))))
 
 
+def write_html(sdk_info_list: List[SdkInfo]):
+    xround = lambda r, n: None if r is None else round(r, n)
+    xstr = lambda s: '' if s is None else str(s)
+
+    aggregated_info = aggregate_info(sdk_info_list)
+
+    response = '<!DOCTYPE html><html><head><title>Java Packages</title></head><body>'
+
+    response += f'<p>Number of track1 packages: {str(aggregated_info.count_track1)}</p>'
+    response += f'<p>Number of track2 packages: {str(aggregated_info.count_track2)}</p>'
+    response += f'<p>Number of track1 packages not having track2: {str(aggregated_info.count_track1_but_no_track2)}</p>'
+
+    response += '<table style="width:100%"><caption>Java Packages</caption>'
+    response += '<thead><tr><th>Service</th><th>Track1</th><th>Track2</th><th>Track1 API</th><th>Track2 API</th>' \
+                '<th>Service Ring</th><th>Traffic</th><th>Completeness</th><th>Correctness</th></tr></thead>'
+
+    response += '<tbody>'
+    for item in sdk_info_list:
+        track1_str = ('GA' if item.track1_stable else 'beta') if item.track1 else ''
+        track2_str = ('GA' if item.track2_stable else 'beta') if item.track2 else ''
+        traffic_str = f'{item.traffic:,}' if item.traffic else ''
+        response += f"<tr><th>{item.sdk}</th><th>{track1_str}</th><th>{track2_str}</th>" \
+                    f"<th>{xstr(item.track1_api_version)}</th><th>{xstr(item.track2_api_version)}</th>" \
+                    f"<th>{xstr(item.ring)}</th><th>{traffic_str}</th><th>{xstr(xround(item.completeness, 2))}</th>" \
+                    f"<th>{xstr(xround(item.correctness, 2))}</th></tr>"
+    response += '</tbody>'
+    response += '</table>'
+
+    response += '</body></html>'
+
+    return response
+
+
 def write_csv(sdk_info_list: List[SdkInfo]):
     logging.info(f'write csv: {CSV_FILENAME}')
     with open(CSV_FILENAME, 'w', newline='') as f:
@@ -238,6 +256,23 @@ def write_csv(sdk_info_list: List[SdkInfo]):
         writer.writerow(['service', 'track1', 'track2', 'track1 api', 'track2 api'])
         for item in sdk_info_list:
             writer.writerow(item.to_row())
+
+
+def aggregate_info(sdk_info_list: List[SdkInfo]) -> AggregatedInfo:
+    known_track1_alias = ['cosmosdb',       # cosmos
+                          'eventhub',       # eventhubs
+                          'features',
+                          'graph-rbac',     # authentication
+                          'locks',
+                          'media',          # mediaservices
+                          'policy',
+                          'website'         # appservice
+                          ]
+
+    count_track1 = len([item for item in sdk_info_list if item.track1 and (item.track1_api_version or item.track1_stable)])
+    count_track2 = len([item for item in sdk_info_list if item.track2])
+    count_track1_but_no_track2 = len([item for item in sdk_info_list if item.track1 and (item.track1_api_version or item.track1_stable) and (not item.track2 and item.sdk not in known_track1_alias)])
+    return AggregatedInfo(count_track1, count_track2, count_track1_but_no_track2)
 
 
 def get_track2_version(package: str, version: str) -> str or None:
@@ -281,6 +316,14 @@ def compare_version(current_ver: str, exist_ver: str) -> str:
         return current_ver[1:]
     else:
         return exist_ver
+
+
+def run():
+    logging.basicConfig(level=logging.INFO)
+    sdk_info_list = process_java_packages_csv()
+    join_kpi_csv(sdk_info_list)
+    print_stdout(sdk_info_list)
+    write_csv(sdk_info_list)
 
 
 if __name__ == "__main__":
