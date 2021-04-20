@@ -336,7 +336,7 @@ def aggregate_info(sdk_info_list: List[SdkInfo]) -> AggregatedInfo:
                           'eventhub',       # eventhubs
                           'features',
                           'graph-rbac',     # authentication
-                          'insights',       # monitor
+                          'insights',       # applicationinsights
                           'locks',
                           'media',          # mediaservices
                           'policy',
