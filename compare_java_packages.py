@@ -331,12 +331,16 @@ def write_csv(sdk_info_list: List[SdkInfo]):
 
 def aggregate_info(sdk_info_list: List[SdkInfo]) -> AggregatedInfo:
     known_track1_alias = ['cosmosdb',       # cosmos
+                          'dbformariadb',   # mariadb
+                          'documentdb',     # cosmos
                           'eventhub',       # eventhubs
                           'features',
                           'graph-rbac',     # authentication
+                          'insights',       # monitor
                           'locks',
                           'media',          # mediaservices
                           'policy',
+                          'subscriptions',
                           'website'         # appservice
                           ]
 
