@@ -18,6 +18,8 @@ CSV_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk/master/_data/releas
 TRACK1_PACKAGE_PREFIX = 'azure-mgmt-'
 TRACK2_PACKAGE_PREFIX = 'azure-resourcemanager-'
 
+MAVEN_RESOURCE_MANGER_GROUP_URL = 'https://repo1.maven.org/maven2/com/azure/resourcemanager/'
+
 CSV_FILENAME = 'compare_java_packages.csv'
 
 SWAGGER_SDK_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk-for-java/master/eng/mgmt/automation/api-specs.yaml'
@@ -100,10 +102,41 @@ def process_java_packages_csv() -> List[SdkInfo]:
                 package,
                 row['VersionPreview'] if version == '' else version)
 
+    add_java_packages_maven(sdk_info)
+
     sdk_info_list = [item for item in sdk_info.values()]
     sdk_info_list.sort(key=lambda r: ('2.' if r.track2_api_version else '1.') + r.sdk)
 
     return sdk_info_list
+
+
+def add_java_packages_maven(sdk_info: Dict[str, SdkInfo]):
+    sdk_list = []
+    logging.info(f'query html: {MAVEN_RESOURCE_MANGER_GROUP_URL}')
+    with urlopen(MAVEN_RESOURCE_MANGER_GROUP_URL) as html_response:
+        html_data = html_response.read()
+        html_str = html_data.decode('utf-8')
+        for package in re.findall(r'azure-resourcemanager-[-\w]+', html_str):
+            if package != TRACK2_PACKAGE_PREFIX + 'parent':
+                sdk = package[len(TRACK2_PACKAGE_PREFIX):]
+                sdk_list.append(sdk)
+
+    for sdk in sdk_list:
+        if sdk not in sdk_info or not sdk_info[sdk].track2:
+            maven_metadata_url = MAVEN_RESOURCE_MANGER_GROUP_URL + TRACK2_PACKAGE_PREFIX + sdk + '/maven-metadata.xml'
+            logging.info(f'query xml: {maven_metadata_url}')
+            with urlopen(maven_metadata_url) as xml_response:
+                xml_data = xml_response.read()
+                xml_str = xml_data.decode('utf-8')
+                matched = re.search(r'<latest>(.*)</latest>', xml_str, re.MULTILINE)
+                if matched:
+                    version = matched.group(1)
+                    if sdk not in sdk_info:
+                        sdk_info[sdk] = SdkInfo(sdk)
+                    sdk_info[sdk].track2 = True
+                    if '-beta.' not in version:
+                        sdk_info[sdk].track2_stable = True
+                    sdk_info[sdk].track2_api_version = get_track2_version(TRACK2_PACKAGE_PREFIX + sdk, version)
 
 
 def join_kpi_csv(sdk_info_list: List[SdkInfo]):
@@ -114,8 +147,8 @@ def join_kpi_csv(sdk_info_list: List[SdkInfo]):
     logging.info(f'query yml: {SWAGGER_SDK_URL}')
     with urlopen(SWAGGER_SDK_URL) as yaml_response:
         yaml_data = yaml_response.read()
-        yaml_data = yaml_data.decode('utf-8')
-        swagger_sdk = yaml.safe_load(yaml_data)
+        yaml_str = yaml_data.decode('utf-8')
+        swagger_sdk = yaml.safe_load(yaml_str)
         for key in swagger_sdk:
             value = swagger_sdk[key]
             if 'service' in value:
