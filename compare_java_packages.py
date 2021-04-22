@@ -105,7 +105,7 @@ def process_java_packages_csv() -> List[SdkInfo]:
     add_java_packages_maven(sdk_info)
 
     sdk_info_list = [item for item in sdk_info.values()]
-    sdk_info_list.sort(key=lambda r: ('2.' if r.track2_api_version else '1.') + r.sdk)
+    sdk_info_list.sort(key=lambda r: ('a.' if r.track2_api_version else 'b.') + r.sdk)
 
     return sdk_info_list
 
@@ -331,6 +331,8 @@ def write_csv(sdk_info_list: List[SdkInfo]):
 
 def aggregate_info(sdk_info_list: List[SdkInfo]) -> AggregatedInfo:
     known_track1_alias = ['cosmosdb',       # cosmos
+                          'datalake-analytics',
+                          'datalake-store',
                           'dbformariadb',   # mariadb
                           'documentdb',     # cosmos
                           'eventhub',       # eventhubs
