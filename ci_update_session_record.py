@@ -1,12 +1,13 @@
 import os
+import re
 import logging
 
 
 SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
 # SDK_REPO = 'c:/github/azure-libraries-for-java'
-RESOURCE_PROVIDER = 'Microsoft.ContainerService'
+RESOURCE_PROVIDER = 'Microsoft.Resources'
 VERSION_CHANGES = {
-    '2020-11-01': '2021-03-01'
+    '2020-06-01': '2021-01-01'
 }
 
 
@@ -37,6 +38,16 @@ def update(filepath: str):
                     modified = True
 
                     line = line.replace(f'api-version={before}', f'api-version={after}')
+        elif RESOURCE_PROVIDER == 'Microsoft.Resources':
+            # resource groups
+            if re.match(r' {4}"Uri" : "http://localhost:1234/subscriptions/00000000-0000-0000-0000-000000000000/resource[Gg]roups/[-\w._()]+\?api-version=[-0-9]+",', line) \
+                    or re.match(r' {4}"Uri" : "http://localhost:1234/subscriptions/00000000-0000-0000-0000-000000000000/resource[Gg]roups\?api-version=[-0-9]+",', line)\
+                    or re.match(r' {4}"Uri" : "http://localhost:1234/subscriptions/00000000-0000-0000-0000-000000000000/resource[Gg]roups/[-\w._()]+/resources\?api-version=[-0-9]+",', line):
+                for before, after in VERSION_CHANGES.items():
+                    if f'api-version={before}' in line:
+                        modified = True
+
+                        line = line.replace(f'api-version={before}', f'api-version={after}')
         out_lines.append(line)
 
     if modified:
