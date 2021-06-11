@@ -116,7 +116,8 @@ def add_java_packages_maven(sdk_info: Dict[str, SdkInfo]):
     with urlopen(MAVEN_RESOURCE_MANGER_GROUP_URL) as html_response:
         html_data = html_response.read()
         html_str = html_data.decode('utf-8')
-        for package in re.findall(r'azure-resourcemanager-[-\w]+', html_str):
+        for package in re.findall(r'<a href="azure-resourcemanager-[-\w]+/"', html_str):
+            package = package[9:-2]
             if package != TRACK2_PACKAGE_PREFIX + 'parent':
                 sdk = package[len(TRACK2_PACKAGE_PREFIX):]
                 sdk_list.append(sdk)
