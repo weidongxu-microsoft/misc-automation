@@ -5,9 +5,9 @@ import logging
 
 SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
 # SDK_REPO = 'c:/github/azure-libraries-for-java'
-RESOURCE_PROVIDER = 'Microsoft.Compute'
+RESOURCE_PROVIDER = 'Microsoft.Storage'
 VERSION_CHANGES = {
-    '2021-04-01': '2021-07-01'
+    '2021-02-01': '2021-04-01'
 }
 
 
