@@ -3,11 +3,11 @@ import re
 import logging
 
 
-SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
-# SDK_REPO = 'c:/github/azure-libraries-for-java'
-RESOURCE_PROVIDER = 'Microsoft.Compute'
+# SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
+SDK_REPO = 'c:/github/azure-libraries-for-net'
+RESOURCE_PROVIDER = 'Microsoft.Resources'
 VERSION_CHANGES = {
-    '2021-04-01': '2021-07-01'
+    '2019-08-01': '2021-01-01'
 }
 
 
@@ -21,7 +21,7 @@ def process_session_records():
         for name in files:
             filepath = os.path.join(root, name)
             if os.path.splitext(filepath)[1] == '.json' \
-                    and 'session-records' in filepath and 'target' not in filepath:
+                    and 'SessionRecords' in filepath and 'target' not in filepath:
                 update(filepath)
 
 
@@ -32,7 +32,7 @@ def update(filepath: str):
     modified = False
     out_lines = []
     for line in lines:
-        if 'http://localhost:' in line and f'/providers/{RESOURCE_PROVIDER}/' in line:
+        if '"RequestUri"' in line and f'/providers/{RESOURCE_PROVIDER}/' in line:
             for before, after in VERSION_CHANGES.items():
                 if f'api-version={before}' in line:
                     modified = True
@@ -40,9 +40,9 @@ def update(filepath: str):
                     line = line.replace(f'api-version={before}', f'api-version={after}')
         elif RESOURCE_PROVIDER == 'Microsoft.Resources':
             # resource groups
-            if re.match(r' {4}"Uri" : "http://localhost:1234/subscriptions/00000000-0000-0000-0000-000000000000/resource[Gg]roups/[-\w._()]+\?api-version=[-0-9]+",', line) \
-                    or re.match(r' {4}"Uri" : "http://localhost:1234/subscriptions/00000000-0000-0000-0000-000000000000/resource[Gg]roups\?api-version=[-0-9]+",', line)\
-                    or re.match(r' {4}"Uri" : "http://localhost:1234/subscriptions/00000000-0000-0000-0000-000000000000/resource[Gg]roups/[-\w._()]+/resources\?api-version=[-0-9]+",', line):
+            if re.match(r' {6}"RequestUri": "/subscriptions/[-a-z0-9]*/resource[Gg]roups/[-\w._()]+\?api-version=[-0-9]+",', line) \
+                    or re.match(r' {6}"RequestUri": "/subscriptions/[-a-z0-9]*/resource[Gg]roups\?api-version=[-0-9]+",', line)\
+                    or re.match(r' {6}"RequestUri": "/subscriptions/[-a-z0-9]*/resource[Gg]roups/[-\w._()]+/resources\?api-version=[-0-9]+",', line):
                 for before, after in VERSION_CHANGES.items():
                     if f'api-version={before}' in line:
                         modified = True
