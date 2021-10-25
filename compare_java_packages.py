@@ -205,16 +205,17 @@ def query_kpi_info() -> Dict[str, List[KpiInfo]]:
                         kpi_info[namespace] = []
                     kpi_info[namespace].append(kpi_item)
     else:
-        with open(REST_KPI_FILENAME, 'r', newline='', encoding='utf-8') as f:
-            csv_reader = csv.DictReader(f, delimiter=',', quotechar='"')
-            for row in csv_reader:
-                namespace = row['resourceProviderName'].strip().upper()
-                if namespace.startswith('MICROSOFT.'):
-                    kpi_item = KpiInfo(namespace, row['ServiceName'].strip(), row['ServiceRing'].strip(),
-                                       int(row['trafficCount']), float(row['completeness']), float(row['correctness']))
-                    if namespace not in kpi_info:
-                        kpi_info[namespace] = []
-                    kpi_info[namespace].append(kpi_item)
+        if os.path.isfile(REST_KPI_FILENAME):
+            with open(REST_KPI_FILENAME, 'r', newline='', encoding='utf-8') as f:
+                csv_reader = csv.DictReader(f, delimiter=',', quotechar='"')
+                for row in csv_reader:
+                    namespace = row['resourceProviderName'].strip().upper()
+                    if namespace.startswith('MICROSOFT.'):
+                        kpi_item = KpiInfo(namespace, row['ServiceName'].strip(), row['ServiceRing'].strip(),
+                                           int(row['trafficCount']), float(row['completeness']), float(row['correctness']))
+                        if namespace not in kpi_info:
+                            kpi_info[namespace] = []
+                        kpi_info[namespace].append(kpi_item)
 
     return kpi_info
 
