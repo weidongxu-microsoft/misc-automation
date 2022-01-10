@@ -144,7 +144,7 @@ def check_maven_url(url: str):
               .replace('mvnrepository#com', 'mvnrepository.com')\
               .replace('https://mvnrepository.com/artifact/', 'https://repo1.maven.org/maven2/') + '/maven-metadata.xml'
     r = requests.get(url)
-    print(f'check url {url}, status code {r.status_code}')
+    logging.info(f'check url {url}, status code {r.status_code}')
     r.raise_for_status()
 
 
