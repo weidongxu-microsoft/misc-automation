@@ -1,6 +1,7 @@
 import dataclasses
 import logging
 import csv
+import requests
 from typing import List
 from urllib.request import urlopen
 
@@ -56,8 +57,13 @@ class SdkInfo:
     t2_artifact: str
 
     def to_row(self) -> List[str]:
-        return [self.service, 'Java', f'https://mvnrepository.com/artifact/{self.t1_package}/{self.t1_artifact}',
-                f'https://mvnrepository.com/artifact/com.azure.resourcemanager/{self.t2_artifact}', MIGRATION_LINK]
+        return [self.service, 'Java', self.t1_maven_url(), self.t2_maven_url(), MIGRATION_LINK]
+
+    def t1_maven_url(self):
+        return f'https://mvnrepository.com/artifact/{self.t1_package}/{self.t1_artifact}'
+
+    def t2_maven_url(self):
+        return f'https://mvnrepository.com/artifact/com.azure.resourcemanager/{self.t2_artifact}'
 
 
 def process_java_packages_csv() -> List[SdkInfo]:
@@ -109,6 +115,8 @@ def run():
     sdk_info_list = process_java_packages_csv()
     write_csv(sdk_info_list)
 
+    validate_maven_packages(sdk_info_list)
+
 
 def write_csv(sdk_info_list: List[SdkInfo]):
     logging.info(f'write csv: {CSV_FILENAME}')
@@ -121,6 +129,23 @@ def write_csv(sdk_info_list: List[SdkInfo]):
                          'Migration Guide link'])
         for item in sdk_info_list:
             writer.writerow(item.to_row())
+
+
+def validate_maven_packages(sdk_info_list: List[SdkInfo]):
+    for sdk_info in sdk_info_list:
+        check_maven_url(sdk_info.t1_maven_url())
+        check_maven_url(sdk_info.t2_maven_url())
+
+
+def check_maven_url(url: str):
+    url = url\
+              .replace('mvnrepository.com', 'mvnrepository#com')\
+              .replace('.', '/')\
+              .replace('mvnrepository#com', 'mvnrepository.com')\
+              .replace('https://mvnrepository.com/artifact/', 'https://repo1.maven.org/maven2/') + '/maven-metadata.xml'
+    r = requests.get(url)
+    print(f'check url {url}, status code {r.status_code}')
+    r.raise_for_status()
 
 
 if __name__ == "__main__":
