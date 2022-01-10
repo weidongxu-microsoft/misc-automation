@@ -1,9 +1,7 @@
 import dataclasses
 import logging
 import csv
-import re
-import os
-from typing import List, Dict
+from typing import List
 from urllib.request import urlopen
 
 
@@ -58,7 +56,8 @@ class SdkInfo:
     t2_artifact: str
 
     def to_row(self) -> List[str]:
-        return [self.service, 'Java', self.t1_package, self.t1_artifact, self.t2_artifact, MIGRATION_LINK]
+        return [self.service, 'Java', f'https://mvnrepository.com/artifact/{self.t1_package}/{self.t1_artifact}',
+                f'https://mvnrepository.com/artifact/com.azure.resourcemanager/{self.t2_artifact}', MIGRATION_LINK]
 
 
 def process_java_packages_csv() -> List[SdkInfo]:
@@ -117,7 +116,6 @@ def write_csv(sdk_info_list: List[SdkInfo]):
         writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         writer.writerow(['Service', 'Language',
-                         'Legacy package (package being replaced) namespace',
                          'Legacy package (package being replaced)',
                          'New Packages that replace the legacy package on the left',
                          'Migration Guide link'])
