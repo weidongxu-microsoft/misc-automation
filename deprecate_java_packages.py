@@ -67,8 +67,6 @@ class SdkInfo:
 
 
 def process_java_packages_csv() -> List[SdkInfo]:
-    sdk_info = {}
-
     logging.info(f'query csv: {CSV_URL}')
     with urlopen(CSV_URL) as csv_response:
         csv_data = csv_response.read()
@@ -86,9 +84,17 @@ def process_java_packages_csv() -> List[SdkInfo]:
                 service = SERVICE_NAME_MAP[service]
             sdk = Sdk(service, namespace, package)
             t1_sdks.append(sdk)
+        elif package == 'azure':
+            service = ''
+            sdk = Sdk(service, namespace, package)
+            t1_sdks.append(sdk)
 
         if package.startswith(TRACK2_PACKAGE_PREFIX) and package != TRACK2_PACKAGE_PREFIX + 'parent':
             service = package[len(TRACK2_PACKAGE_PREFIX):]
+            sdk = Sdk(service, namespace, package)
+            t2_sdks[service] = sdk
+        elif package == 'azure-resourcemanager':
+            service = ''
             sdk = Sdk(service, namespace, package)
             t2_sdks[service] = sdk
 
@@ -105,7 +111,7 @@ def process_java_packages_csv() -> List[SdkInfo]:
         sdk_info = SdkInfo(sdk.service, sdk.package, sdk.artifact, t2_sdk.artifact if t2_sdk else '')
         sdk_info_list.append(sdk_info)
 
-    sdk_info_list.append(SdkInfo('', 'com.microsoft.azure', 'azure', 'azure-resourcemanager'))
+    # sdk_info_list.append(SdkInfo('', 'com.microsoft.azure', 'azure', 'azure-resourcemanager'))
 
     return sdk_info_list
 
