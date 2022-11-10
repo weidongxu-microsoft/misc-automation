@@ -5,8 +5,8 @@ import requests
 import logging
 
 
-date_start = datetime.strptime('10/01/2021/+00:00', '%m/%d/%Y/%z')
-date_end = datetime.strptime('10/31/2021/+00:00', '%m/%d/%Y/%z')
+date_start = datetime.strptime('05/01/2022/+00:00', '%m/%d/%Y/%z')
+date_end = datetime.strptime('05/31/2022/+00:00', '%m/%d/%Y/%z')
 regex_match = 'azure-resourcemanager.*_.+'
 package_regex_group = '(.*)_.*'
 version_regex_group = '.*_(.*)'

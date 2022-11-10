@@ -14,7 +14,7 @@ except ImportError:
     pass    # pyodbc is required only when KPI_CONNECTION_STRING is set in environment variables
 
 
-CSV_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk/master/_data/releases/latest/java-packages.csv'
+CSV_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk/main/_data/releases/latest/java-packages.csv'
 TRACK1_PACKAGE_PREFIX = 'azure-mgmt-'
 TRACK2_PACKAGE_PREFIX = 'azure-resourcemanager-'
 
@@ -22,7 +22,7 @@ MAVEN_RESOURCE_MANGER_GROUP_URL = 'https://repo1.maven.org/maven2/com/azure/reso
 
 CSV_FILENAME = 'compare_java_packages.csv'
 
-SWAGGER_SDK_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk-for-java/master/eng/mgmt/automation/api-specs.yaml'
+SWAGGER_SDK_URL = 'https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/eng/mgmt/automation/api-specs.yaml'
 
 SWAGGER_METADATA_FILENAME = 'swagger_metadata.csv'
 REST_KPI_FILENAME = 'kpi_7d.csv'

@@ -70,7 +70,7 @@ def update_new_arm_packages(rows: List[Dict], rows_all: List[Dict]):
             row['RepoPath'] = sdk_name
 
         try:
-            readme_data = urlopen(f'https://raw.githubusercontent.com/Azure/azure-rest-api-specs/master/specification/{sdk_name}/resource-manager/readme.md').read()
+            readme_data = urlopen(f'https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/{sdk_name}/resource-manager/readme.md').read()
             readme_str = readme_data.decode('utf-8')
             lines = readme_str.split('\n')
             for line in lines:
