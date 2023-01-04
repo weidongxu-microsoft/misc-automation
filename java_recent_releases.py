@@ -5,8 +5,8 @@ import requests
 import logging
 
 
-date_start = datetime.strptime('05/01/2022/+00:00', '%m/%d/%Y/%z')
-date_end = datetime.strptime('05/31/2022/+00:00', '%m/%d/%Y/%z')
+date_start = datetime.strptime('09/01/2022/+00:00', '%m/%d/%Y/%z')
+date_end = datetime.strptime('09/30/2022/+00:00', '%m/%d/%Y/%z')
 regex_match = 'azure-resourcemanager.*_.+'
 package_regex_group = '(.*)_.*'
 version_regex_group = '.*_(.*)'
@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %X')
 
+packages = []
 for page in itertools.count(start=1):
     request_uri = f'https://api.github.com/repos/azure/azure-sdk-for-java/releases'
     releases_response = requests.get(request_uri,
@@ -32,7 +33,12 @@ for page in itertools.count(start=1):
                     if re.match(regex_match, release_tag):
                         package = re.match(package_regex_group, release_tag).group(1)
                         version = re.match(version_regex_group, release_tag).group(1)
-                        logging.info(f'Found release: {package} {version}')
+                        packages.append((package, version))
     else:
         logging.error(f'Request failed: {releases_response.status_code}\n{releases_response.json()}')
         break
+
+packages.sort()
+for package in packages:
+    preview = '(preview)' if 'beta' in package[1] else ''
+    print(f'{package[0]} {preview}')
