@@ -5,8 +5,8 @@ import requests
 import logging
 
 
-date_start = datetime.strptime('05/01/2022/+00:00', '%m/%d/%Y/%z')
-date_end = datetime.strptime('05/31/2022/+00:00', '%m/%d/%Y/%z')
+date_start = datetime.strptime('02/01/2018/+00:00', '%m/%d/%Y/%z')
+date_end = datetime.strptime('02/28/2023/+00:00', '%m/%d/%Y/%z')
 regex_match = 'azure-resourcemanager.*_.+'
 package_regex_group = '(.*)_.*'
 version_regex_group = '.*_(.*)'
@@ -14,6 +14,8 @@ version_regex_group = '.*_(.*)'
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %X')
+
+sdks = {}
 
 for page in itertools.count(start=1):
     request_uri = f'https://api.github.com/repos/azure/azure-sdk-for-java/releases'
@@ -33,6 +35,17 @@ for page in itertools.count(start=1):
                         package = re.match(package_regex_group, release_tag).group(1)
                         version = re.match(version_regex_group, release_tag).group(1)
                         logging.info(f'Found release: {package} {version}')
+
+                        if package in sdks:
+                            sdk_version = sdks[package]
+                            if '-beta.' in sdk_version and '-beta.' not in version:
+                                sdks[package] = version
+                        else:
+                            sdks[package] = version
     else:
         logging.error(f'Request failed: {releases_response.status_code}\n{releases_response.json()}')
         break
+
+count_stable = len([s for s in sdks.values() if '-beta.' not in s])
+logging.info(f'stable SDKs: {count_stable}')
+logging.info(f'all SDKs: {len(sdks.keys())}')
