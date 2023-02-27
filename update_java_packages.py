@@ -54,7 +54,8 @@ def update_support(rows_all: List[Dict]) -> List[Dict]:
 def collect_new_arm_packages(rows_all: List[Dict]) -> List[Dict]:
     rows = []
     for row in rows_all:
-        if row['GroupId'] == 'com.azure.resourcemanager' and row['New'] == 'false' and row['Hide'] == '':
+        # if row['GroupId'] == 'com.azure.resourcemanager' and row['New'] == 'false' and row['Hide'] == '':
+        if row['GroupId'] == 'com.azure.resourcemanager' and row['DisplayName'].startswith('azure-resourcemanager-'):
             rows.append(row)
     return rows
 
