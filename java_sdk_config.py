@@ -1,8 +1,8 @@
 CLEAN_REPO = True
 
-SDK_REPO = 'c:/github_fork/azure-sdk-for-java'
+SDK_REPO = "c:/github_fork/azure-sdk-for-java"
 
-POM_TEMPLATE = r'''<!-- Copyright (c) Microsoft Corporation. All rights reserved.
+POM_TEMPLATE = r"""<!-- Copyright (c) Microsoft Corporation. All rights reserved.
      Licensed under the MIT License. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -15,17 +15,13 @@ POM_TEMPLATE = r'''<!-- Copyright (c) Microsoft Corporation. All rights reserved
   <modules>
 {modules}  </modules>
 </project>
-'''
+"""
 
-MGMT_DIRS_PREFIX = 'mgmt-v'
+MGMT_DIRS_PREFIX = "mgmt-v"
 
-EXCLUDE_DIRS_PREFIX = [
-    'azure',
-    'microsoft-azure',
-    'ms-azure'
-]
+EXCLUDE_DIRS_PREFIX = ["azure", "microsoft-azure", "ms-azure"]
 
-YAML_TEMPLATE = r'''resources:
+YAML_TEMPLATE = r"""resources:
   repositories:
     - repository: azure-sdk-build-tools
       type: git
@@ -65,4 +61,4 @@ stages:
   - template: ../../eng/pipelines/templates/stages/archetype-sdk-management.yml
     parameters:
       ServiceDirectory: {service}
-'''
+"""

@@ -1,9 +1,9 @@
 import os
 import re
 
-SDK_REPO = 'c:/github/azure-sdk-for-java/sdk/resourcemanager'
+SDK_REPO = "c:/github/azure-sdk-for-java/sdk/resourcemanager"
 
-README_TEMPLATE = '''
+README_TEMPLATE = """
 For documentation on how to use this package, please see [Azure Management Libraries for Java](https://aka.ms/azsdk/java/mgmt).
 
 ## Getting started
@@ -88,9 +88,9 @@ Azure Projects Contribution Guidelines](https://azure.github.io/guidelines.html)
 [authenticate]: https://github.com/Azure/azure-sdk-for-java/blob/master/sdk/resourcemanager/docs/AUTH.md
 [sample]: https://github.com/Azure/azure-sdk-for-java/blob/master/sdk/resourcemanager/docs/SAMPLE.md
 [design]: https://github.com/Azure/azure-sdk-for-java/blob/master/sdk/resourcemanager/docs/DESIGN.md
-'''
+"""
 
-README_SAMPLES_TEMPLATE='''// Copyright (c) Microsoft Corporation. All rights reserved.
+README_SAMPLES_TEMPLATE = """// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 package com.azure.resourcemanager.{{sdk}};
@@ -118,64 +118,69 @@ public class ReadmeSamples {
             .authenticate(credential, profile);
     }
 }
-'''
+"""
 
 
 def update_readme(readme_dir: str, sdk_name: str, sdk_manager_name: str):
     if os.path.exists(readme_dir):
         keep_lines = []
-        sdk_version = ''
-        with open(readme_dir, 'r') as f:
+        sdk_version = ""
+        with open(readme_dir, "r") as f:
             keep = True
             for line in f.readlines():
                 if keep:
                     keep_lines.append(line)
-                if line.startswith('Azure Resource Manager'):
+                if line.startswith("Azure Resource Manager"):
                     keep = False
 
                 line = line.strip()
-                if line.startswith('<version>'):
-                    match = re.search('<version>(.+?)</version>', line)
+                if line.startswith("<version>"):
+                    match = re.search("<version>(.+?)</version>", line)
                     if match:
                         sdk_version = match.group(1)
                     break
-        with open(readme_dir, 'w') as f:
-            content = README_TEMPLATE\
-                .replace('{{sdk}}', sdk_name)\
-                .replace('{{sdk_manager}}', sdk_manager_name)\
-                .replace('{{sdk_version}}', sdk_version)
-            content = ''.join(keep_lines) + content
+        with open(readme_dir, "w") as f:
+            content = (
+                README_TEMPLATE.replace("{{sdk}}", sdk_name)
+                .replace("{{sdk_manager}}", sdk_manager_name)
+                .replace("{{sdk_version}}", sdk_version)
+            )
+            content = "".join(keep_lines) + content
             f.write(content)
 
 
 def update_sample(sample_dir: str, sdk_name: str, sdk_manager_name: str):
-    sample_file_dir = os.path.join(sample_dir, 'ReadmeSamples.java')
+    sample_file_dir = os.path.join(sample_dir, "ReadmeSamples.java")
     if not os.path.exists(sample_file_dir):
         os.makedirs(sample_dir, exist_ok=True)
-        with open(sample_file_dir, 'w') as f:
-            content = README_SAMPLES_TEMPLATE\
-                .replace('{{sdk}}', sdk_name)\
-                .replace('{{sdk_manager}}', sdk_manager_name)
+        with open(sample_file_dir, "w") as f:
+            content = README_SAMPLES_TEMPLATE.replace("{{sdk}}", sdk_name).replace("{{sdk_manager}}", sdk_manager_name)
             f.write(content)
 
 
 def main():
     for sdk_artifact in os.listdir(SDK_REPO):
         sdk_dir = os.path.join(SDK_REPO, sdk_artifact)
-        if sdk_artifact.startswith('azure-resourcemanager-') \
-                and not ('perf' in sdk_artifact or 'samples' in sdk_artifact or 'test' in sdk_artifact) \
-                and os.path.isdir(sdk_dir):
-            match = re.search('azure-resourcemanager-(.+?)$', sdk_artifact)
+        if (
+            sdk_artifact.startswith("azure-resourcemanager-")
+            and not ("perf" in sdk_artifact or "samples" in sdk_artifact or "test" in sdk_artifact)
+            and os.path.isdir(sdk_dir)
+        ):
+            match = re.search("azure-resourcemanager-(.+?)$", sdk_artifact)
             if match:
                 sdk_name = match.group(1)
-                readme_dir = os.path.join(sdk_dir, 'README.md')
-                sdk_manager_dir = os.path.join(sdk_dir, 'src', 'main', 'java', 'com', 'azure', 'resourcemanager', sdk_name)
-                sample_dir = os.path.join(sdk_dir, 'src', 'samples', 'java', 'com', 'azure', 'resourcemanager', sdk_name)
-                sdk_manager_name = ''
+                readme_dir = os.path.join(sdk_dir, "README.md")
+                sdk_manager_dir = os.path.join(
+                    sdk_dir, "src", "main", "java", "com", "azure", "resourcemanager", sdk_name
+                )
+                sample_dir = os.path.join(
+                    sdk_dir, "src", "samples", "java", "com", "azure", "resourcemanager", sdk_name
+                )
+                sdk_manager_name = ""
                 if os.path.isdir(sdk_manager_dir):
                     for filename in os.listdir(sdk_manager_dir):
-                        if filename.endswith('Manager.java'):
-                            sdk_manager_name = filename.replace('.java', '')
+                        if filename.endswith("Manager.java"):
+                            sdk_manager_name = filename.replace(".java", "")
 
                 update_readme(readme_dir, sdk_name, sdk_manager_name)
                 update_sample(sample_dir, sdk_name, sdk_manager_name)

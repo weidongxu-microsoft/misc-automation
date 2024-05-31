@@ -1,6 +1,6 @@
 import re
 
-RUNTIME_STACK = r'''
+RUNTIME_STACK = r"""
   "RUBY|2.3.8",
   "RUBY|2.4.5",
   "RUBY|2.5.5",
@@ -48,61 +48,56 @@ RUNTIME_STACK = r'''
   "PYTHON|3.7",
   "PYTHON|3.6",
   "PYTHON|2.7"
-'''
+"""
 
-TEMPLATE = r'''/** {docstring} */
+TEMPLATE = r"""/** {docstring} */
 public static final RuntimeStack {name} = new RuntimeStack("{stack}", "{version}");
-'''
+"""
 
-NAME_PATTERN = {
-    'NODE': '{stack}JS_{version}',
-    'DOTNETCORE': 'NETCORE_V{version}',
-    '*': '{stack}_{version}'
-}
+NAME_PATTERN = {"NODE": "{stack}JS_{version}", "DOTNETCORE": "NETCORE_V{version}", "*": "{stack}_{version}"}
 
-NAME_PATTERN_DEFAULT = NAME_PATTERN['*']
+NAME_PATTERN_DEFAULT = NAME_PATTERN["*"]
 
 DOCSTRING_PATTERN = {
-    'WILDFLY': 'WildFly {version} image.',
-    'TOMCAT': 'Tomcat {version} image with catalina root set to Azure wwwroot.',
-    'NODE': 'Node.JS {version}.',
-    'DOTNETCORE': '.NET Core v{version}.',
-    '*': '{stack} {version}.'
+    "WILDFLY": "WildFly {version} image.",
+    "TOMCAT": "Tomcat {version} image with catalina root set to Azure wwwroot.",
+    "NODE": "Node.JS {version}.",
+    "DOTNETCORE": ".NET Core v{version}.",
+    "*": "{stack} {version}.",
 }
 
-DOCSTRING_PATTERN_DEFAULT = DOCSTRING_PATTERN['*']
+DOCSTRING_PATTERN_DEFAULT = DOCSTRING_PATTERN["*"]
 
 DOCSTRING_POST_RE = [
-    ('-lts', ' LTS'),
-    ('JAVA 8-jre8', 'JAVA JRE 8'),
-    ('JAVA 11-java11', 'JAVA JAVA 11'),
-    ('WildFly 14-jre8', 'WildFly 14.0-jre8')
+    ("-lts", " LTS"),
+    ("JAVA 8-jre8", "JAVA JRE 8"),
+    ("JAVA 11-java11", "JAVA JAVA 11"),
+    ("WildFly 14-jre8", "WildFly 14.0-jre8"),
 ]
 
 
 runtime_stacks = []
 for line in RUNTIME_STACK.splitlines():
     if line:
-        segments = line.split('|')
-        runtime_stacks.append({
-            'stack': segments[0].strip().strip('"'),
-            'version': segments[1].strip().strip(',"')
-        })
+        segments = line.split("|")
+        runtime_stacks.append({"stack": segments[0].strip().strip('"'), "version": segments[1].strip().strip(',"')})
 
-runtime_stacks.sort(key=lambda r: r['stack'] + '.'.join(map(lambda v: v.rjust(4), r['version'].replace('-', '.').split('.'))))
+runtime_stacks.sort(
+    key=lambda r: r["stack"] + ".".join(map(lambda v: v.rjust(4), r["version"].replace("-", ".").split(".")))
+)
 
 for runtime_stack in runtime_stacks:
-    stack = runtime_stack['stack']
-    version = runtime_stack['version']
+    stack = runtime_stack["stack"]
+    version = runtime_stack["version"]
 
-    ver_segments = version.split('.')
+    ver_segments = version.split(".")
     if len(ver_segments) > 2:
-        version = '.'.join(ver_segments[0:2])
+        version = ".".join(ver_segments[0:2])
 
     name_pattern = NAME_PATTERN.get(stack, NAME_PATTERN_DEFAULT)
     docstring_pattern = DOCSTRING_PATTERN.get(stack, DOCSTRING_PATTERN_DEFAULT)
 
-    version_in_name = version.replace('.', '_').replace('-', '_').upper()
+    version_in_name = version.replace(".", "_").replace("-", "_").upper()
     name = name_pattern.format(stack=stack, version=version_in_name)
     docstring = docstring_pattern.format(stack=stack, version=version)
     for post_re in DOCSTRING_POST_RE:

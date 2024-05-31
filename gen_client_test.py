@@ -1,6 +1,6 @@
 import re
 
-CLASS_OUTPUT = r'''
+CLASS_OUTPUT = r"""
 Code	File	Line	Column	Project
 public partial class WebSiteManagementClient : FluentServiceClientBase<WebSiteManagementClient>, IWebSiteManagementClient, IAzureClient	D:\github\azure-libraries-for-net\src\ResourceManagement\AppService\Generated\WebSiteManagementClient.cs	28	26	Microsoft.Azure.Management.AppService.Fluent (net452)
 public partial class BatchManagementClient : FluentServiceClientBase<BatchManagementClient>, IBatchManagementClient, IAzureClient	D:\github\azure-libraries-for-net\src\ResourceManagement\Batch\Generated\BatchManagementClient.cs	23	26	Microsoft.Azure.Management.Batch.Fluent (net452)
@@ -30,42 +30,44 @@ public partial class ServiceBusManagementClient : FluentServiceClientBase<Servic
 public partial class SqlManagementClient : FluentServiceClientBase<SqlManagementClient>, ISqlManagementClient, IAzureClient	D:\github\azure-libraries-for-net\src\ResourceManagement\Sql\Generated\SqlManagementClient.cs	29	26	Microsoft.Azure.Management.Sql.Fluent (net452)
 public partial class StorageManagementClient : FluentServiceClientBase<StorageManagementClient>, IStorageManagementClient, IAzureClient	D:\github\azure-libraries-for-net\src\ResourceManagement\Storage\Generated\StorageManagementClient.cs	26	26	Microsoft.Azure.Management.Storage.Fluent (net452)
 public partial class TrafficManagerManagementClient : FluentServiceClientBase<TrafficManagerManagementClient>, ITrafficManagerManagementClient, IAzureClient	D:\github\azure-libraries-for-net\src\ResourceManagement\TrafficManager\Generated\TrafficManagerManagementClient.cs	26	26	Microsoft.Azure.Management.TrafficManager.Fluent (net452)
-'''
+"""
 
-TEMPLATE = r'''else if (client is {class_name})
+TEMPLATE = r"""else if (client is {class_name})
 {{
     Assert.Equal(new Uri(environment.ResourceManagerEndpoint).Host, (client as {class_name}).BaseUri.Host);
-}}'''
+}}"""
 
 CLASS_NAME_IGNORE = [
-    'AuthorizationManagementClient',
-    'GraphRbacManagementClient',
-    'ManagedServiceIdentityClient',
-    'SubscriptionClient'
+    "AuthorizationManagementClient",
+    "GraphRbacManagementClient",
+    "ManagedServiceIdentityClient",
+    "SubscriptionClient",
 ]
 
 CLASS_NAME_MAP = {
-    'WebSiteManagementClient': 'AppService',
-    'ManagementLockClient': 'Locks',
-    'FeatureClient': 'ResourceManager',
-    'ResourceManagementClient': 'ResourceManager'
+    "WebSiteManagementClient": "AppService",
+    "ManagementLockClient": "Locks",
+    "FeatureClient": "ResourceManager",
+    "ResourceManagementClient": "ResourceManager",
 }
 
 
-class_name_regex = re.compile(r'.*class (?P<class_name>[a-zA-z]+) : FluentServiceClientBase.*')
+class_name_regex = re.compile(r".*class (?P<class_name>[a-zA-z]+) : FluentServiceClientBase.*")
 class_names = []
 for line in CLASS_OUTPUT.splitlines():
-    if 'FluentServiceClientBase' in line:
+    if "FluentServiceClientBase" in line:
         class_names.append(class_name_regex.findall(line))
-print('Classes: ' + str(class_names) + '\n')
+print("Classes: " + str(class_names) + "\n")
 
 for class_name in class_names:
     if class_name in CLASS_NAME_IGNORE:
         continue
     elif class_name in CLASS_NAME_MAP:
-        full_class_name = 'Microsoft.Azure.Management.' + CLASS_NAME_MAP[class_name] + '.Fluent.' + class_name
-    elif 'ManagementClient' in class_name:
-        full_class_name = 'Microsoft.Azure.Management.' + class_name.replace('ManagementClient', '') + '.Fluent.' + class_name
+        full_class_name = "Microsoft.Azure.Management." + CLASS_NAME_MAP[class_name] + ".Fluent." + class_name
+    elif "ManagementClient" in class_name:
+        full_class_name = (
+            "Microsoft.Azure.Management." + class_name.replace("ManagementClient", "") + ".Fluent." + class_name
+        )
     else:
-        full_class_name = 'Microsoft.Azure.Management.' + class_name + '.Fluent.' + class_name
+        full_class_name = "Microsoft.Azure.Management." + class_name + ".Fluent." + class_name
     print(TEMPLATE.format(class_name=full_class_name))
